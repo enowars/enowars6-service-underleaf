@@ -1,0 +1,16 @@
+version: '3.9'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dev.Dockerfile
+    volumes:
+      - ./backend:/app
+    ports:
+      - 3000:3000
+
+  nginx-git:
+    image: catks/gitserver-http:0.1.0-rc.3-2-g117e58d
+    ports:
+      - 80:80

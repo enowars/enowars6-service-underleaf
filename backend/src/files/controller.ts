@@ -2,6 +2,7 @@ import { existsSync, readdirSync } from 'fs';
 
 import { RequestHandler } from "express";
 import { UploadedFile } from "express-fileupload";
+import { status_ok } from '../helpers/status';
 
 export const uploadFiles: RequestHandler = function (req, res) {
     if(!req.files){
@@ -18,7 +19,7 @@ export const uploadFiles: RequestHandler = function (req, res) {
         }
     }
 
-    res.json({status: "ok"});
+    res.json(status_ok);
 }
 
 export const getFilesPresent: RequestHandler = function (req, res) {

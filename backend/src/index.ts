@@ -4,7 +4,7 @@ import fileUpload from 'express-fileupload';
 
 import filesRouter from './files/router';
 import projectRouter from './project/router';
-
+import gitRouter from './git/router';
 
 const app = express();
 
@@ -19,6 +19,7 @@ app.use(fileUpload({
 
 app.use('/files', filesRouter);
 app.use('/project', projectRouter);
+app.use('/git', gitRouter);
 
 app.listen(3000, () => {
     console.log('Listening on port 3000!');

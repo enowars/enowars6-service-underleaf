@@ -36,7 +36,7 @@ export function projectIsSafe(id:string): boolean {
 
 
 export const reqProjectIdIsSafe: RequestHandler = (req, res, next) => {
-    const id = req.method === 'GET' ? req.params.id : req.body.id;
+    const id = req.params.id || req.body.id;
 
     if(typeof id === 'string' && projectIsSafe(id)){
         next();

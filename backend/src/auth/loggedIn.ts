@@ -13,7 +13,7 @@ export const loggedIn:RequestHandler = async (req, res, next) => {
         try{
             decoded = await verify(token, getJwtSecret());
         }catch(e){
-            res.status(401).json({status: 'invalid token'});
+            res.status(401).json({status: 'login required; invalid token.'});
             return;
         }
         
@@ -23,5 +23,5 @@ export const loggedIn:RequestHandler = async (req, res, next) => {
         return;
     }
 
-    res.status(401).json({status: 'no token provided'});
+    res.status(401).json({status: 'login required; no token provided.'});
 }

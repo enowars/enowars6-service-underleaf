@@ -10,12 +10,26 @@ services:
       - git:/app/data/git
     ports:
       - 3000:3000
+    environment:
+      - JWT_SECRET=value
+
+  db:
+    image: mongo
+    logging:
+      driver: none
 
   nginx-git:
     image: catks/gitserver-http:0.1.0-rc.3-2-g117e58d
     user: 1000:1000
+    logging:
+      driver: none
     volumes:
       - git:/home/git
+
+  reverseproxy:
+    image: nginx:alpine
+    volumes:
+      - ./reverseproxy/nginx.conf:/etc/nginx/nginx.conf
     ports:
       - 80:80
 

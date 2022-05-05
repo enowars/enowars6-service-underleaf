@@ -4,6 +4,9 @@ import { randomBytes } from 'crypto';
 import { mkdirSync } from 'fs';
 import { getProjectPath, getProjectRemoteGitPath, getRemoteGitUrl } from "../helpers/project";
 import { gitSetupProject } from "../helpers/git";
+import { status_ok } from "../helpers/status";
+import Project from "./projectSchema";
+import User from "../auth/userSchema";
 
 
 
@@ -17,5 +20,11 @@ export const createProject:RequestHandler = async (req, res) => {
 
     await gitSetupProject(path, remotePath, getRemoteGitUrl(id));
 
-    res.json({ status: 'ok', id });
+    const user = await User.findOne({username: req.body.auth.username});
+    const proj = new Project({
+        id,
+        owner: user.id,
+    })
+
+    res.json({ id, ... status_ok });
 }

@@ -24,7 +24,9 @@ export const createProject:RequestHandler = async (req, res) => {
     const proj = new Project({
         id,
         owner: user.id,
-    })
+    });
+    
+    await proj.save();
 
     res.json({ id, ... status_ok });
 }

@@ -9,3 +9,8 @@ export const projectUrl = '/api/project';
 
 export const createProjectUrl = projectUrl + '/create';
 export const listProjectsUrl = projectUrl + '/list';
+
+
+export const filesUrl = '/api/files';
+
+export const listFilesUrl = filesUrl + '/list';

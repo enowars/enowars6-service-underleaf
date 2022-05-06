@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { loginUrl, registerUrl, createProjectUrl, listProjectsUrl } from './urls';
+import { loginUrl, registerUrl, createProjectUrl, listProjectsUrl, listFilesUrl } from './urls';
 
 const client = axios.create();
 
@@ -47,4 +47,8 @@ export function createProject(name){
 
 export function listProjects() {
     return client.get(listProjectsUrl);
+}
+
+export function listFiles(id) {
+    return client.get(listFilesUrl + '/' + id);
 }

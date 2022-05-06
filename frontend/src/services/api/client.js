@@ -7,6 +7,7 @@ import {
   listFilesUrl,
   downloadFileUrl,
   uploadFileUrl,
+  compileUrl,
 } from "./urls";
 
 const client = axios.create();
@@ -71,4 +72,8 @@ export function uploadFile(id, file, data) {
   fd.append("file", blob, "file");
 
   return client.post(uploadFileUrl + "/" + id + file, fd);
+}
+
+export function compileProject(id) {
+  return client.get(compileUrl + "/" + id);
 }

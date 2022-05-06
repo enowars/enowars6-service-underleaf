@@ -14,3 +14,6 @@ export const filesUrl = "/api/files";
 export const listFilesUrl = filesUrl + "/list";
 export const downloadFileUrl = filesUrl + "/download";
 export const uploadFileUrl = filesUrl + "/upload";
+
+export const latexUrl = "/api/latex";
+export const compileUrl = latexUrl + "/compile";

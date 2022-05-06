@@ -17,9 +17,17 @@ import {
   createProject,
   listProjects,
   downloadFile,
+  compileProject,
 } from "./services/api/client";
 
-window.cli = { login, register, createProject, listProjects, downloadFile };
+window.cli = {
+  login,
+  register,
+  createProject,
+  listProjects,
+  downloadFile,
+  compileProject,
+};
 
 const routes = [
   { path: "/", component: MainView },

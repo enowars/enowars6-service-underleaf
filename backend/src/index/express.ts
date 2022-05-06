@@ -5,6 +5,7 @@ import fileUpload from "express-fileupload";
 import filesRouter from "../files/router";
 import projectRouter from "../project/router";
 import gitRouter from "../git/router";
+import latexRouter from "../latex/router";
 import authRouter from "../auth/router";
 
 const app = express();
@@ -23,6 +24,7 @@ app.use(
 app.use("/files", filesRouter);
 app.use("/project", projectRouter);
 app.use("/git", gitRouter);
+app.use("/latex", latexRouter);
 
 app.use("/auth", authRouter);
 

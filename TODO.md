@@ -1,1 +1,2 @@
 - generate secure jwt keys
+- do not allow upload and download to .git

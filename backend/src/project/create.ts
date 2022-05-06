@@ -11,6 +11,11 @@ import User from "../auth/userSchema";
 
 
 export const createProject:RequestHandler = async (req, res) => {
+    if(!req.body.name || typeof req.body.name !== 'string') {
+        res.status(400).json({status: 'Project name is required'});
+        return;
+    }
+
     const id = randomBytes(32).toString('hex');
     const path = getProjectPath(id);
     const remotePath = getProjectRemoteGitPath(id);
@@ -24,6 +29,7 @@ export const createProject:RequestHandler = async (req, res) => {
     const proj = new Project({
         id,
         owner: user.id,
+        name: req.body.name,
     });
     
     await proj.save();

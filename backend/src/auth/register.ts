@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import { status_ok } from "../helpers/status";
 import User from "./userSchema";
 import { hash } from 'bcrypt';
+import { createJwt } from "./jwt";
 
 export const register:RequestHandler = async (req, res) => {
     if(req.body.username && typeof req.body.username === 'string' && req.body.username.length > 0 
@@ -25,7 +26,7 @@ export const register:RequestHandler = async (req, res) => {
             }
             return;
         }
-        res.send(status_ok);
+        res.json({token: createJwt(req.body.username), ... status_ok});
         return;
     }
     res.status(400).send({status: 'invalid username or password.'});

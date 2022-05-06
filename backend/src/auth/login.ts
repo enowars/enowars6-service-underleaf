@@ -13,5 +13,5 @@ export const login:RequestHandler = async (req, res) => {
         }
     }
 
-    res.status(401).json({status: 'invalid login'});
+    res.status(401).json({status: 'Invalid login'});
 }

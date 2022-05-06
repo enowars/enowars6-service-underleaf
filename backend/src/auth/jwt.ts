@@ -9,6 +9,6 @@ export function getJwtSecret() {
 
 export function createJwt(username: string): string {
     const payload = { username };
-    const token = jwt.sign(payload, getJwtSecret(), { expiresIn: '1h' });
+    const token = jwt.sign(payload, getJwtSecret(), { expiresIn: '8h' });
     return token;
 }

@@ -26,6 +26,11 @@ services:
     volumes:
       - git:/home/git
 
+  frontend:
+    build: ./frontend
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/nginx.conf
+
   reverseproxy:
     image: nginx:alpine
     volumes:

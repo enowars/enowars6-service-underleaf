@@ -1,0 +1,11 @@
+name: Check code style
+on: [push]
+jobs:
+  prettier:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - run: prettier --check .

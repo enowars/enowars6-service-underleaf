@@ -46,5 +46,5 @@ export const reqProjectIdIsSafe: RequestHandler = (req, res, next) => {
 
 export function getProjectCompilePath(id: string): string {
   throwIfProjectIdIsNotSafe(id);
-  return './data/compile/' + idToSegmentedPath(id);
+  return "./data/compile/" + idToSegmentedPath(id);
 }

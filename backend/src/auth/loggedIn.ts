@@ -13,11 +13,10 @@ export const loggedIn: RequestHandler = async (req, res, next) => {
       decoded = await verify(token, getJwtSecret());
 
       // check that we have the user, this may not be the case, if the database got reset
-      if(null === await User.findOne( {username: decoded.username})){
-        console.log("123")
+      if (null === (await User.findOne({ username: decoded.username }))) {
+        console.log("123");
         throw new Error("");
       }
-
     } catch (e) {
       res.status(401).json({ status: "login required; invalid token." });
       return;

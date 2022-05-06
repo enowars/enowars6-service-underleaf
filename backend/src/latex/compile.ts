@@ -15,29 +15,32 @@ function trimmedBufferToString(buffer: Buffer): string {
 }
 
 export const compileProject: RequestHandler = async (req, res) => {
-  if(!req.body.file){
-    res.status(400).json({status: 'no file provided'});
+  if (!req.body.file) {
+    res.status(400).json({ status: "no file provided" });
   }
 
   const container = await docker.container.create({
     Image: latexDockerImage,
     Cmd: ["pdflatex", "-shell-escape", "/data/" + req.body.file],
   });
-  
-  const tarPath = '/tmp/' + req.params.id + '.tar';
-  const tarProm:Promise<void> = tar.create({
-    gz: false,
-    cwd: resolve(getProjectPath(req.params.id)),
-    file: tarPath,
-    prefix: 'data/'
-  } as any, ['./']) as any;
 
-  if((await Promise.any([timeout(actionTimeout), tarProm])) === 'timeout') {
-    res.status(400).json({status: 'tar timed out'});
-    return
+  const tarPath = "/tmp/" + req.params.id + ".tar";
+  const tarProm: Promise<void> = tar.create(
+    {
+      gz: false,
+      cwd: resolve(getProjectPath(req.params.id)),
+      file: tarPath,
+      prefix: "data/",
+    } as any,
+    ["./"]
+  ) as any;
+
+  if ((await Promise.any([timeout(actionTimeout), tarProm])) === "timeout") {
+    res.status(400).json({ status: "tar timed out" });
+    return;
   }
-  
-  await container.fs.put(createReadStream(tarPath), {path: '/'})
+
+  await container.fs.put(createReadStream(tarPath), { path: "/" });
 
   await container.start();
 
@@ -48,21 +51,27 @@ export const compileProject: RequestHandler = async (req, res) => {
   });
 
   let output = "";
-  stream.on("data", (d: Buffer) => {output += trimmedBufferToString(d);});
+  stream.on("data", (d: Buffer) => {
+    output += trimmedBufferToString(d);
+  });
 
   const finish = await Promise.any([timeout(actionTimeout), container.wait()]);
 
-  const outputPath = getProjectCompilePath(req.params.id) + '.pdf';
-  if(finish !== 'timeout') {
+  const outputPath = getProjectCompilePath(req.params.id) + ".pdf";
+  if (finish !== "timeout") {
     await promises.mkdir(resolve(outputPath, ".."), { recursive: true });
 
-    const stream = await container.fs.get({path: '/' + parse(req.body.file).name + '.pdf'}) as any;
+    const stream = (await container.fs.get({
+      path: "/" + parse(req.body.file).name + ".pdf",
+    })) as any;
     const output = createWriteStream(outputPath);
-    
+
     stream.pipe(output);
 
-    await Promise.any([timeout(actionTimeout), new Promise((resolve) => stream.on('finish', resolve))]);
-
+    await Promise.any([
+      timeout(actionTimeout),
+      new Promise((resolve) => stream.on("finish", resolve)),
+    ]);
   }
 
   try {
@@ -75,10 +84,14 @@ export const compileProject: RequestHandler = async (req, res) => {
   if (finish !== "timeout") {
     res.download(outputPath);
   } else {
-    res.status(400).send({ status: "container timed out",  output });
+    res.status(400).send({ status: "container timed out", output });
   }
 };
 
 function timeout(time: number): Promise<string> {
-  return new Promise((resolve) => setTimeout(() => {resolve('timeout')}, time));
+  return new Promise((resolve) =>
+    setTimeout(() => {
+      resolve("timeout");
+    }, time)
+  );
 }

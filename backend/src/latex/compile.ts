@@ -7,11 +7,21 @@ import { resolve, parse } from "path";
 import tar from "tar";
 import { getProjectCompilePath, getProjectPath } from "../helpers/project";
 import { latexDockerImage } from "./constats";
+import { Container } from "node-docker-api/lib/container";
 
 const actionTimeout = 1000;
 
 function trimmedBufferToString(buffer: Buffer): string {
   return buffer.toString("utf8", 8);
+}
+
+async function removeContainer(container: Container){
+  try {
+    await container.kill();
+  } catch (e) {}
+  try {
+    await container.delete({ force: true });
+  } catch {}
 }
 
 export const compileProject: RequestHandler = async (req, res) => {
@@ -21,6 +31,7 @@ export const compileProject: RequestHandler = async (req, res) => {
 
   const container = await docker.container.create({
     Image: latexDockerImage,
+    WorkingDir: "/data",
     Cmd: ["pdflatex", "-shell-escape", "/data/" + req.body.file],
   });
 
@@ -57,32 +68,33 @@ export const compileProject: RequestHandler = async (req, res) => {
 
   const finish = await Promise.any([timeout(actionTimeout), container.wait()]);
 
-  const outputPath = getProjectCompilePath(req.params.id) + ".pdf";
   if (finish !== "timeout") {
+    const outputPath = getProjectCompilePath(req.params.id) + ".pdf";
     await promises.mkdir(resolve(outputPath, ".."), { recursive: true });
 
-    const stream = (await container.fs.get({
-      path: "/" + parse(req.body.file).name + ".pdf",
-    })) as any;
-    const output = createWriteStream(outputPath);
+    try{
+      const stream = (await container.fs.get({
+        path: "/data/" + parse(req.body.file).name + ".pdf",
+      })) as any;
+      const output = createWriteStream(outputPath);
 
-    stream.pipe(output);
+      stream.pipe(output);
 
-    await Promise.any([
-      timeout(actionTimeout),
-      new Promise((resolve) => stream.on("finish", resolve)),
-    ]);
+      await Promise.any([
+        timeout(actionTimeout),
+        new Promise((resolve) => stream.on("finish", resolve)),
+      ]);
+    }catch{
+      removeContainer(container);
+      res.status(400).json({ status: "compile failed", output });
+      return;
+    }
   }
 
-  try {
-    await container.kill();
-  } catch (e) {}
-  try {
-    await container.delete({ force: true });
-  } catch {}
+  removeContainer(container);
 
   if (finish !== "timeout") {
-    res.download(outputPath);
+    res.json(status_ok);
   } else {
     res.status(400).send({ status: "container timed out", output });
   }

@@ -4,9 +4,11 @@
       <file-list :id="id" @selected="onFileSelected"></file-list>
     </pane>
     <pane style="overflow-y: auto">
-      <latex-editor :id="id" ref="editor"></latex-editor>
+      <latex-editor :id="id" ref="editor" @compile="compile"></latex-editor>
     </pane>
-    <pane style="overflow-y: auto"> </pane>
+    <pane style="overflow-y: auto">
+      <pdf-viewer :src="pdfUrl" ref="viewer"></pdf-viewer>
+    </pane>
   </splitpanes>
 </template>
 
@@ -15,6 +17,8 @@ import { Splitpanes, Pane } from "splitpanes";
 import "splitpanes/dist/splitpanes.css";
 import FileList from "../components/FileList.vue";
 import LatexEditor from "../components/LatexEditor.vue";
+import PdfViewer from '../components/PdfViewer.vue';
+import { compileProject } from "../services/api/client";
 
 export default {
   name: "ProjectView",
@@ -23,16 +27,31 @@ export default {
     Pane,
     FileList,
     LatexEditor,
+    PdfViewer,
   },
   computed: {
     id() {
       return this.$route.params.id;
     },
+    pdfUrl(){
+      return `/api/latex/output/${this.id}`;
+    }
   },
   methods: {
-    onFileSelected(file) {
+    async onFileSelected(file) {
       this.$refs.editor.changeFile(file);
+      await this.compile(file);
     },
+    async compile(file){
+      this.$refs.viewer.setLoading();
+      const resp = await compileProject(this.id, file);
+      if(resp.data.status !== 'ok'){
+        console.error(resp.data.output);
+        alert(resp.data.status + ": " + resp.data.output);
+        return;
+      }
+      this.$refs.viewer.loadDocument();
+    }
   },
 };
 </script>

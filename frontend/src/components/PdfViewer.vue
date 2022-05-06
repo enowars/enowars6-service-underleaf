@@ -1,10 +1,15 @@
 <template>
-  <div style="background-color: #555; text-align: center" ref="container">
+<div>
+  <div class="pdf-container" ref="container" :style="loading ? 'display: none' : '' ">
     <div v-for="page in doc.numPages" v-bind:key="page">
       <canvas ref="canvas" class="page"></canvas>
       <div ref="text" class="textLayer"></div>
     </div>
   </div>
+  <div v-if="loading" class="text-center" style="margin-top: 50vh">
+    <b-spinner variant="primary" size="lg"></b-spinner>
+  </div>
+</div>
 </template>
 
 <script>
@@ -15,6 +20,11 @@ import "pdfjs-dist/web/pdf_viewer.css";
 
 export default {
   name: "PdfViewer",
+  data(){
+    return {
+      loading: true
+    }
+  },
   props: {
     src: {
       type: String,
@@ -22,6 +32,9 @@ export default {
     },
   },
   methods: {
+    setLoading(){
+      this.loading = true;
+    },
     scheduleResize() {
       if (this.resizeTimeoutId) {
         clearTimeout(this.resizeTimeoutId);
@@ -41,7 +54,14 @@ export default {
       this.renderCanvas(this.getScale());
     },
     async loadDocument() {
-      this.doc = await getDocument(this.src).promise;
+      this.doc = await getDocument({
+        url: this.src,
+        httpHeaders: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        }
+      }).promise;
+
+      this.loading = false;
 
       this.$forceUpdate();
 
@@ -102,7 +122,6 @@ export default {
   },
   created() {
     this.doc = { numPages: 0 };
-    this.loadDocument();
   },
   mounted() {
     new ResizeObserver(this.scheduleResize.bind(this)).observe(
@@ -115,5 +134,9 @@ export default {
 <style scoped>
 .page {
   border: 1px solid black;
+}
+.pdf-container {
+  background-color: #555;
+  text-align: center
 }
 </style>

@@ -21,10 +21,12 @@ async function getFiles(dir: string) {
             if(name === '/.git'){
                 continue;
             }
-            result.push(name);
 
             if(file.isDirectory()){
+                result.push(name + '/');
                 stack.push(resolve(currentPath, file.name));
+            }else{
+                result.push(name);
             }
         }
     }

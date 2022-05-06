@@ -1,15 +1,19 @@
 <template>
-<div>
-  <div class="pdf-container" ref="container" :style="loading ? 'display: none' : '' ">
-    <div v-for="page in doc.numPages" v-bind:key="page">
-      <canvas ref="canvas" class="page"></canvas>
-      <div ref="text" class="textLayer"></div>
+  <div>
+    <div
+      class="pdf-container"
+      ref="container"
+      :style="loading ? 'display: none' : ''"
+    >
+      <div v-for="page in doc.numPages" v-bind:key="page">
+        <canvas ref="canvas" class="page"></canvas>
+        <div ref="text" class="textLayer"></div>
+      </div>
+    </div>
+    <div v-if="loading" class="text-center" style="margin-top: 50vh">
+      <b-spinner variant="primary" size="lg"></b-spinner>
     </div>
   </div>
-  <div v-if="loading" class="text-center" style="margin-top: 50vh">
-    <b-spinner variant="primary" size="lg"></b-spinner>
-  </div>
-</div>
 </template>
 
 <script>
@@ -20,10 +24,10 @@ import "pdfjs-dist/web/pdf_viewer.css";
 
 export default {
   name: "PdfViewer",
-  data(){
+  data() {
     return {
-      loading: true
-    }
+      loading: true,
+    };
   },
   props: {
     src: {
@@ -32,7 +36,7 @@ export default {
     },
   },
   methods: {
-    setLoading(){
+    setLoading() {
       this.loading = true;
     },
     scheduleResize() {
@@ -58,7 +62,7 @@ export default {
         url: this.src,
         httpHeaders: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
-        }
+        },
       }).promise;
 
       this.loading = false;
@@ -137,6 +141,6 @@ export default {
 }
 .pdf-container {
   background-color: #555;
-  text-align: center
+  text-align: center;
 }
 </style>

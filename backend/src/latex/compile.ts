@@ -15,7 +15,7 @@ function trimmedBufferToString(buffer: Buffer): string {
   return buffer.toString("utf8", 8);
 }
 
-async function removeContainer(container: Container){
+async function removeContainer(container: Container) {
   try {
     await container.kill();
   } catch (e) {}
@@ -72,7 +72,7 @@ export const compileProject: RequestHandler = async (req, res) => {
     const outputPath = getProjectCompilePath(req.params.id) + ".pdf";
     await promises.mkdir(resolve(outputPath, ".."), { recursive: true });
 
-    try{
+    try {
       const stream = (await container.fs.get({
         path: "/data/" + parse(req.body.file).name + ".pdf",
       })) as any;
@@ -84,7 +84,7 @@ export const compileProject: RequestHandler = async (req, res) => {
         timeout(actionTimeout),
         new Promise((resolve) => stream.on("finish", resolve)),
       ]);
-    }catch{
+    } catch {
       removeContainer(container);
       res.status(400).json({ status: "compile failed", output });
       return;

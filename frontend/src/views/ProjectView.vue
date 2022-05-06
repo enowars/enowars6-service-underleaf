@@ -17,7 +17,7 @@ import { Splitpanes, Pane } from "splitpanes";
 import "splitpanes/dist/splitpanes.css";
 import FileList from "../components/FileList.vue";
 import LatexEditor from "../components/LatexEditor.vue";
-import PdfViewer from '../components/PdfViewer.vue';
+import PdfViewer from "../components/PdfViewer.vue";
 import { compileProject } from "../services/api/client";
 
 export default {
@@ -33,25 +33,25 @@ export default {
     id() {
       return this.$route.params.id;
     },
-    pdfUrl(){
+    pdfUrl() {
       return `/api/latex/output/${this.id}`;
-    }
+    },
   },
   methods: {
     async onFileSelected(file) {
       this.$refs.editor.changeFile(file);
       await this.compile(file);
     },
-    async compile(file){
+    async compile(file) {
       this.$refs.viewer.setLoading();
       const resp = await compileProject(this.id, file);
-      if(resp.data.status !== 'ok'){
+      if (resp.data.status !== "ok") {
         console.error(resp.data.output);
         alert(resp.data.status + ": " + resp.data.output);
         return;
       }
       this.$refs.viewer.loadDocument();
-    }
+    },
   },
 };
 </script>

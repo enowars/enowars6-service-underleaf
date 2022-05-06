@@ -50,7 +50,7 @@ export default {
       this.code = (await downloadFile(this.id, file)).data;
     },
     save() {
-      this.$emit('compile', this.currentFile);
+      this.$emit("compile", this.currentFile);
       this.saveFile();
     },
   },

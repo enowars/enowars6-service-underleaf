@@ -45,7 +45,6 @@ export default {
       }
     },
     async changeFile(file) {
-      console.log(file);
       await this.saveFile();
       this.currentFile = file;
       this.code = (await downloadFile(this.id, file)).data;

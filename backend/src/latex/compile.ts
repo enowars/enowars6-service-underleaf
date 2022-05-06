@@ -52,10 +52,8 @@ export const compileProject: RequestHandler = async (req, res) => {
 
   const finish = await Promise.any([timeout(actionTimeout), container.wait()]);
 
+  const outputPath = getProjectCompilePath(req.params.id) + '.pdf';
   if(finish !== 'timeout') {
-
-    const outputPath = getProjectCompilePath(req.params.id) + '.pdf';
-
     await promises.mkdir(resolve(outputPath, ".."), { recursive: true });
 
     const stream = await container.fs.get({path: '/' + parse(req.body.file).name + '.pdf'}) as any;
@@ -75,7 +73,7 @@ export const compileProject: RequestHandler = async (req, res) => {
   } catch {}
 
   if (finish !== "timeout") {
-    res.send({ output, ...status_ok });
+    res.download(outputPath);
   } else {
     res.status(400).send({ status: "container timed out",  output });
   }

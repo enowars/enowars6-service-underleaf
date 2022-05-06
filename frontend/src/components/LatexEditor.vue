@@ -1,5 +1,6 @@
 <template>
   <prism-editor
+    @keydown.ctrl.s.prevent.stop="save"
     id="code"
     class="editor"
     v-model="code"
@@ -18,7 +19,7 @@ import Prism from "prismjs";
 import "prismjs/components/prism-latex";
 import "prismjs/components/prism-core";
 import "prismjs/themes/prism-okaidia.css";
-import { downloadFile } from "../services/api/client";
+import { downloadFile, uploadFile } from "../services/api/client";
 
 export default {
   components: {
@@ -40,7 +41,7 @@ export default {
     },
     async saveFile() {
       if (this.currentFile !== undefined) {
-        console.log("save");
+        await uploadFile(this.id, this.currentFile, this.code);
       }
     },
     async changeFile(file) {
@@ -49,6 +50,9 @@ export default {
       this.currentFile = file;
       this.code = (await downloadFile(this.id, file)).data;
     },
+    save(){
+      this.saveFile();
+    }
   },
 };
 </script>

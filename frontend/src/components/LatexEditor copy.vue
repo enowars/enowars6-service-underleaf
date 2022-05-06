@@ -30,9 +30,7 @@ import Prism from "prismjs";
 import "prismjs/components/prism-latex";
 import "prismjs/components/prism-core";
 import "prismjs/themes/prism-okaidia.css";
-import PdfViewer from './PdfViewer.vue';
-
-
+import PdfViewer from "./PdfViewer.vue";
 
 export default {
   components: {

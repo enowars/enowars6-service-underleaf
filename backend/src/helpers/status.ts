@@ -1,1 +1,1 @@
-export const status_ok = {status: 'ok'};
+export const status_ok = { status: "ok" };

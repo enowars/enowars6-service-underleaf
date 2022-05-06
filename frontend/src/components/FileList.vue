@@ -1,15 +1,22 @@
 <template>
-<div>
-  <b-table :items="filesItems" striped hover>
-    <template v-slot:cell(name)="row">
-      <div @click="$emit('selected', row.item.name)" style="cursor: pointer;">
-        {{ row.item.name }}
-      </div>
-    </template>
-  </b-table>
+  <div>
+    <b-table :items="filesItems" striped hover>
+      <template v-slot:cell(name)="row">
+        <div @click="$emit('selected', row.item.name)" style="cursor: pointer">
+          {{ row.item.name }}
+        </div>
+      </template>
+    </b-table>
 
-  <b-button v-b-modal.new-file-modal variant="success">Create new file</b-button>
-    <b-modal centered id="new-file-modal" title="Create a new file" @ok="createNewFile">
+    <b-button v-b-modal.new-file-modal variant="success"
+      >Create new file</b-button
+    >
+    <b-modal
+      centered
+      id="new-file-modal"
+      title="Create a new file"
+      @ok="createNewFile"
+    >
       <b-form-group label="File name:" label-for="fileName">
         <b-form-input
           id="fileName"
@@ -19,58 +26,58 @@
         ></b-form-input>
       </b-form-group>
     </b-modal>
-</div>
+  </div>
 </template>
 
 <script>
-import { listFiles, uploadFile } from '../services/api/client.js';
+import { listFiles, uploadFile } from "../services/api/client.js";
 
 export default {
   props: {
     id: {
       type: String,
-      required: true
-    }
+      required: true,
+    },
   },
-  data(){
+  data() {
     return {
       files: [],
-      newfileName: ''
-    }
+      newfileName: "",
+    };
   },
   computed: {
-    filesItems(){
-      return this.files.map(file => {
+    filesItems() {
+      return this.files.map((file) => {
         return {
           name: file,
-        }
+        };
       });
-    }
+    },
   },
-  mounted(){
+  mounted() {
     this.loadFiles();
   },
   methods: {
-    async loadFiles(){
+    async loadFiles() {
       let isFirst = false;
-      if(this.files.length === 0){
+      if (this.files.length === 0) {
         isFirst = true;
       }
       this.files = (await listFiles(this.id)).data.files.sort();
 
-      if(isFirst){
-        this.$emit('selected', this.files[0]);
+      if (isFirst) {
+        this.$emit("selected", this.files[0]);
       }
     },
-    async createNewFile(){
-      if(!this.newfileName.startsWith('/')){
-        this.newfileName = '/' + this.newfileName;
+    async createNewFile() {
+      if (!this.newfileName.startsWith("/")) {
+        this.newfileName = "/" + this.newfileName;
       }
-      
-      await uploadFile(this.id, this.newfileName, '');
-      this.$emit('selected', this.newfileName);
+
+      await uploadFile(this.id, this.newfileName, "");
+      this.$emit("selected", this.newfileName);
       await this.loadFiles();
-    }
-  }
-}
+    },
+  },
+};
 </script>

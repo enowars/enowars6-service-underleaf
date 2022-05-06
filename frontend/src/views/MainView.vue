@@ -7,17 +7,17 @@
 </template>
 
 <script>
-import NavbarComponent from '../components/NavbarComponent.vue';
-import NotLoggedIn from '../components/NotLoggedIn.vue';
-import ProjectList from '../components/ProjectList.vue';
+import NavbarComponent from "../components/NavbarComponent.vue";
+import NotLoggedIn from "../components/NotLoggedIn.vue";
+import ProjectList from "../components/ProjectList.vue";
 
 export default {
-  name: 'MainView',
+  name: "MainView",
   components: { NavbarComponent, NotLoggedIn, ProjectList },
   computed: {
-    userIsLoggedIn(){
-      return localStorage.getItem('token') !== null;
-    }
-  }
-}
+    userIsLoggedIn() {
+      return localStorage.getItem("token") !== null;
+    },
+  },
+};
 </script>

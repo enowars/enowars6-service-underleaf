@@ -6,7 +6,7 @@ import { listProjects } from "./listProjects";
 export const router = express.Router();
 
 router.use(loggedIn);
-router.post('/create', createProject);
-router.get('/list', listProjects);
+router.post("/create", createProject);
+router.get("/list", listProjects);
 
 export default router;

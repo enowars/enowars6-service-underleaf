@@ -1,7 +1,12 @@
 <template>
   <div class="container p-4">
     <b-button v-b-modal.new-project-modal>New Project</b-button>
-    <b-modal centered id="new-project-modal" title="Create a new project" @ok="createNewProject">
+    <b-modal
+      centered
+      id="new-project-modal"
+      title="Create a new project"
+      @ok="createNewProject"
+    >
       <b-form-group label="Project name:" label-for="projectName">
         <b-form-input
           id="projectName"
@@ -39,20 +44,20 @@ export default {
   data() {
     return {
       projects: [],
-      newProjectName: ''
+      newProjectName: "",
     };
   },
   mounted() {
     this.loadProjects();
   },
   methods: {
-    async loadProjects(){
+    async loadProjects() {
       this.projects = (await listProjects()).data.projects;
     },
     async createNewProject() {
       await createProject(this.newProjectName);
       this.loadProjects();
-    }
-  }
+    },
+  },
 };
 </script>

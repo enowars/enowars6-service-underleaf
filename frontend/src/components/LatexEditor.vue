@@ -49,9 +49,9 @@ export default {
       this.currentFile = file;
       this.code = (await downloadFile(this.id, file)).data;
     },
-    save(){
+    save() {
       this.saveFile();
-    }
+    },
   },
 };
 </script>

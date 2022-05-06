@@ -1,4 +1,5 @@
 <template>
+<div>
   <b-table :items="filesItems" striped hover>
     <template v-slot:cell(name)="row">
       <div @click="$emit('selected', row.item.name)" style="cursor: pointer;">
@@ -6,9 +7,23 @@
       </div>
     </template>
   </b-table>
+
+  <b-button v-b-modal.new-file-modal variant="success">Create new file</b-button>
+    <b-modal centered id="new-file-modal" title="Create a new file" @ok="createNewFile">
+      <b-form-group label="File name:" label-for="fileName">
+        <b-form-input
+          id="fileName"
+          required
+          v-model="newfileName"
+          placeholder="Enter a file name..."
+        ></b-form-input>
+      </b-form-group>
+    </b-modal>
+</div>
 </template>
+
 <script>
-import { listFiles } from '../services/api/client.js';
+import { listFiles, uploadFile } from '../services/api/client.js';
 
 export default {
   props: {
@@ -19,7 +34,8 @@ export default {
   },
   data(){
     return {
-      files: []
+      files: [],
+      newfileName: ''
     }
   },
   computed: {
@@ -45,6 +61,15 @@ export default {
       if(isFirst){
         this.$emit('selected', this.files[0]);
       }
+    },
+    async createNewFile(){
+      if(!this.newfileName.startsWith('/')){
+        this.newfileName = '/' + this.newfileName;
+      }
+      
+      await uploadFile(this.id, this.newfileName, '');
+      this.$emit('selected', this.newfileName);
+      await this.loadFiles();
     }
   }
 }

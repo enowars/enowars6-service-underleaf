@@ -1,4 +1,5 @@
 import { resolve } from 'path';
+import { promises, existsSync } from 'fs';
 
 import { RequestHandler } from "express";
 import { getProjectPath } from "../helpers/project";
@@ -11,11 +12,24 @@ export const uploadFile: RequestHandler = async function (req, res) {
     const path = resolve(projPath, reqPath);
     
     if(path.startsWith(projPath)){
+
+        if(existsSync(path) && (await promises.lstat(path)).isDirectory()){
+            res.status(403).send({status: 'path is a directory'});
+            return;
+        }
+
+        if(path.startsWith(resolve(projPath, '.git'))){
+            res.status(403).send({status: 'path is in .git'});
+            return;
+        }
         
         for (const key in req.files) {
             const file = req.files[key] as UploadedFile;
+            
+            await promises.mkdir(resolve(path, '..'), { recursive: true });
 
             file.mv(path);
+
             res.json(status_ok);
             return;
         }

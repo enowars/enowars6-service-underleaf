@@ -31,8 +31,21 @@ export default {
       });
     }
   },
-  async mounted(){
-    this.files = (await listFiles(this.id)).data.files.sort();
+  mounted(){
+    this.loadFiles();
+  },
+  methods: {
+    async loadFiles(){
+      let isFirst = false;
+      if(this.files.length === 0){
+        isFirst = true;
+      }
+      this.files = (await listFiles(this.id)).data.files.sort();
+
+      if(isFirst){
+        this.$emit('selected', this.files[0]);
+      }
+    }
   }
 }
 </script>

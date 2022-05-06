@@ -14,3 +14,5 @@ export const listProjectsUrl = projectUrl + '/list';
 export const filesUrl = '/api/files';
 
 export const listFilesUrl = filesUrl + '/list';
+export const downloadFileUrl = filesUrl + '/download';
+export const uploadFileUrl = filesUrl + '/upload';

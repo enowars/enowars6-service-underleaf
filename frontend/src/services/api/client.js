@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { loginUrl, registerUrl, createProjectUrl, listProjectsUrl, listFilesUrl } from './urls';
+import { loginUrl, registerUrl, createProjectUrl, listProjectsUrl, listFilesUrl, downloadFileUrl, uploadFileUrl } from './urls';
 
 const client = axios.create();
 
@@ -15,7 +15,7 @@ client.interceptors.request.use((config) => {
 
 client.interceptors.response.use(
     response => {
-        if(response.data.status !== 'ok'){
+        if(response.data.status && response.data.status !== 'ok'){
             console.error(response.data.status);
         }
         return response;
@@ -51,4 +51,16 @@ export function listProjects() {
 
 export function listFiles(id) {
     return client.get(listFilesUrl + '/' + id);
+}
+
+export function downloadFile(id, file) {
+    return client.get(downloadFileUrl + '/' + id + file);
+}
+
+export function uploadFile(id, file, data) {
+    const blob = new Blob([data], {type : 'text/plain'})
+    const fd = new FormData();
+    fd.append('file', blob, 'file');
+
+    return client.post(uploadFileUrl + '/' + id + file, fd);
 }

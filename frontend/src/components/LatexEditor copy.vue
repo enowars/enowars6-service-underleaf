@@ -1,15 +1,27 @@
 <template>
-  <prism-editor
-    id="code"
-    class="editor"
-    v-model="code"
-    :highlight="highlighter"
-    line-numbers
-  ></prism-editor>
+  <splitpanes class="default-theme" vertical style="height: 100vh">
+    <pane style="overflow-y: auto">
+      <prism-editor
+        id="code"
+        class="editor"
+        v-model="code"
+        :highlight="highlighter"
+        line-numbers
+      ></prism-editor>
+    </pane>
+
+    <pane style="overflow-y: auto">
+      <pdf-viewer :src="'/pdf.pdf'" ref="pdf"></pdf-viewer>
+    </pane>
+  </splitpanes>
 </template>
 
 <script>
-//import defaultDocument from "../assets/defaultDocument";
+import { Splitpanes, Pane } from "splitpanes";
+import "splitpanes/dist/splitpanes.css";
+
+import defaultDocument from "../assets/defaultDocument";
+
 // import Prism Editor
 import { PrismEditor } from "vue-prism-editor";
 import "vue-prism-editor/dist/prismeditor.min.css"; // import the styles somewhere
@@ -18,36 +30,26 @@ import Prism from "prismjs";
 import "prismjs/components/prism-latex";
 import "prismjs/components/prism-core";
 import "prismjs/themes/prism-okaidia.css";
-import { downloadFile } from "../services/api/client";
+import PdfViewer from './PdfViewer.vue';
+
+
 
 export default {
   components: {
     PrismEditor,
-  },
-  props: {
-    id: {
-      type: String,
-      required: true,
-    },
+
+    Splitpanes,
+    Pane,
+
+    PdfViewer,
   },
   data: () => ({
-    code: "",
-    currentFile: undefined,
+    code: defaultDocument,
+    numPages: 0,
   }),
   methods: {
     highlighter(code) {
       return Prism.highlight(code, Prism.languages.latex, "latex");
-    },
-    async saveFile() {
-      if (this.currentFile !== undefined) {
-        console.log("save");
-      }
-    },
-    async changeFile(file) {
-      console.log(file);
-      await this.saveFile();
-      this.currentFile = file;
-      this.code = (await downloadFile(this.id, file)).data;
     },
   },
 };
@@ -62,5 +64,10 @@ export default {
   font-family: Fira code, Fira Mono, Consolas, Menlo, Courier, monospace;
   line-height: 1.5;
   padding: 5px;
+}
+body {
+  padding: 0px;
+  margin: 0px;
+  overflow: hidden;
 }
 </style>

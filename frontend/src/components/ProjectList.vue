@@ -6,7 +6,7 @@
         <b-form-input
           id="projectName"
           required
-          v-model="projectName"
+          v-model="newProjectName"
           placeholder="Enter a project name..."
         ></b-form-input>
       </b-form-group>
@@ -39,6 +39,7 @@ export default {
   data() {
     return {
       projects: [],
+      newProjectName: ''
     };
   },
   mounted() {
@@ -49,7 +50,7 @@ export default {
       this.projects = (await listProjects()).data.projects;
     },
     async createNewProject() {
-      await createProject(this.projectName);
+      await createProject(this.newProjectName);
       this.loadProjects();
     }
   }

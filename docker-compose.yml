@@ -25,7 +25,7 @@ services:
   dind:
     image: docker:dind
     privileged: true
-    entrypoint: dockerd --host=tcp://0.0.0.0:80
+    entrypoint: dockerd --host=tcp://0.0.0.0:80 --tls=false
     logging:
       driver: none
 

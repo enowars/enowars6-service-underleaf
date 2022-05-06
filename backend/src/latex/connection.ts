@@ -1,4 +1,5 @@
 import { Docker } from "node-docker-api";
+import { latexDockerImage } from "./constats";
 
 const _docker = new Docker({ host: "dind" });
 
@@ -11,7 +12,7 @@ const promisifyStream = (stream: any) =>
 
 setTimeout(() => {
   // dind takes some time to boot up, so we wait a bit
-  const requiredImages = [{ name: "alpine", tag: "latest" }];
+  const requiredImages = [{ name: "alpine", tag: "latest" }, {name: latexDockerImage, tag: 'latest'}, {name: 'hllm/latexindent', tag: 'latest'}];
 
   for (const requiredImage of requiredImages) {
     _docker.image

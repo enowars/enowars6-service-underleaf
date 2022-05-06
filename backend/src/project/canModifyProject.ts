@@ -5,6 +5,10 @@ export async function canModifyProject(username: string, id: string) {
   const user = await User.findOne({ username });
   const proj = await Project.findOne({ id });
 
+  if(user === null || proj === null){
+    return false;
+  }
+
   if (user.id === proj.owner.toString()) {
     return true;
   }

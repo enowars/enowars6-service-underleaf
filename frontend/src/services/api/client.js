@@ -74,6 +74,6 @@ export function uploadFile(id, file, data) {
   return client.post(uploadFileUrl + "/" + id + file, fd);
 }
 
-export function compileProject(id) {
-  return client.get(compileUrl + "/" + id);
+export function compileProject(id, file) {
+  return client.post(compileUrl + "/" + id, {file});
 }

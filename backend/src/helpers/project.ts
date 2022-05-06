@@ -43,3 +43,8 @@ export const reqProjectIdIsSafe: RequestHandler = (req, res, next) => {
   }
   res.status(400).json({ status: "Project id is invalid" });
 };
+
+export function getProjectCompilePath(id: string): string {
+  throwIfProjectIdIsNotSafe(id);
+  return './data/compile/' + idToSegmentedPath(id);
+}

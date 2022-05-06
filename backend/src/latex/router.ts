@@ -7,6 +7,6 @@ export const router = express.Router();
 
 const checks = [loggedIn, reqProjectIdIsSafe, modifyNeeded];
 
-router.get("/compile/:id/", checks, compileProject);
+router.post("/compile/:id/", checks, compileProject);
 
 export default router;

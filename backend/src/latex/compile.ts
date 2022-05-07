@@ -66,15 +66,14 @@ export const compileProject: RequestHandler = async (req, res) => {
     output += trimmedBufferToString(d);
   });
 
-  
   let finish;
-  try{
+  try {
     finish = await Promise.any([timeout(actionTimeout), container.wait()]);
-  }catch{
-    res.status(500).json({status: 'could not create continer.'});
-    return
+  } catch {
+    res.status(500).json({ status: "could not create continer." });
+    return;
   }
-  
+
   if (finish !== "timeout") {
     const outputPath = getProjectCompilePath(req.params.id) + ".pdf";
     await promises.mkdir(resolve(outputPath, ".."), { recursive: true });

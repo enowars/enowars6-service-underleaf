@@ -8,9 +8,9 @@ services:
       - nginx-git
     build:
       context: ./backend
-      dockerfile: Dockerfile # use the Dev.Dockerfile for development
+      dockerfile: Dev.Dockerfile # use the Dev.Dockerfile for development
     volumes:
-      #- ./backend:/app # allows reloading of code
+      - ./backend:/app # allows reloading of code
       - ./data/:/app/data/
     ports:
       - 3000:3000

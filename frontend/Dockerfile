@@ -9,6 +9,13 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM nginx
 
-COPY --from=builder /app/dist /usr/share/nginx/html/
+FROM node as runner
+
+WORKDIR /app
+
+RUN npm i -g serve
+
+COPY --from=builder /app/dist ./dist
+
+ENTRYPOINT [ "serve", "-l", "80", "-s", "./dist" ]

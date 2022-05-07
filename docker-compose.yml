@@ -43,8 +43,6 @@ services:
 
   frontend:
     build: ./frontend
-    volumes:
-      - ./frontend/nginx.conf:/etc/nginx/nginx.conf
     logging:
       driver: none
     restart: "unless-stopped"

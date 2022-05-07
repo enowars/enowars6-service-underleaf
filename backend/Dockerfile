@@ -1,10 +1,10 @@
-FROM node:latest as builder
+FROM node:latest
 
 WORKDIR /app
 
 COPY package.json package-lock.json ./
 
-RUN npm ci
+RUN npm install --include=dev
 
 COPY . .
 

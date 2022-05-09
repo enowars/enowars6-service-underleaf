@@ -31,6 +31,8 @@ services:
     logging:
       driver: none
     restart: "unless-stopped"
+    tmpfs:
+      - /var/run/
 
   nginx-git:
     image: catks/gitserver-http:0.1.0-rc.3-2-g117e58d
@@ -38,7 +40,7 @@ services:
     logging:
       driver: none
     volumes:
-      - /data/git:/home/git
+      - ./data/git:/home/git
     restart: "unless-stopped"
 
   frontend:

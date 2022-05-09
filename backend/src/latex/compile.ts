@@ -68,7 +68,10 @@ export const compileProject: RequestHandler = async (req, res) => {
 
   let finish;
   try {
-    finish = await Promise.any([timeout(actionTimeout), container.wait()]);
+    finish = await Promise.any([
+      timeout(actionTimeout * 1.5),
+      container.wait(),
+    ]);
   } catch {
     res.status(500).json({ status: "could not create continer." });
     return;

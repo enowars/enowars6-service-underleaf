@@ -49,6 +49,10 @@ export default {
       this.currentFile = file;
       this.code = (await downloadFile(this.id, file)).data;
     },
+    async realoadFile() {
+      this.code = (await downloadFile(this.id, this.currentFile)).data;
+      this.$emit("compile", this.currentFile);
+    },
     save() {
       this.$emit("compile", this.currentFile);
       this.saveFile();

@@ -1,12 +1,26 @@
+import shellescape from "shell-escape";
 import { exec } from "child_process";
 import { promises } from "fs";
 import { resolve } from "path";
 
+class AsyncExecError extends Error {
+  stdout: string;
+  stderr: string;
+  constructor(inner: Error, stdout: string, stderr: string) {
+    super();
+    this.message = inner.message;
+    this.stack = inner.stack;
+    this.name = inner.name;
+    this.stdout = stdout;
+    this.stderr = stderr;
+  }
+}
+
 export function asyncExec(command: string) {
   return new Promise((resolve, reject) => {
-    exec(command, (error) => {
+    exec(command, (error, stdout, stderr) => {
       if (error) {
-        reject(error);
+        reject(new AsyncExecError(error, stdout, stderr));
       } else {
         resolve({});
       }
@@ -19,11 +33,13 @@ export function gitInit(path: string) {
 }
 
 export function gitConfigName(path: string) {
-  return asyncExec(`cd ${path}; git config user.name underleaf`);
+  const rpath = resolve(path);
+  return asyncExec(`git -C ${rpath} config user.name underleaf`);
 }
 
 export function gitConfigEmail(path: string) {
-  return asyncExec(`cd ${path}; git config user.email underleaf@example.com`);
+  const rpath = resolve(path);
+  return asyncExec(`git -C ${rpath} config user.email underleaf@example.com`);
 }
 
 function gitInitBare(path: string) {
@@ -80,10 +96,37 @@ export async function gitSetupProject(
 \\end{document}`
   );
 
+  await gitCommit(localPath, "Initial commit");
+
   // configure 'remote' git
   await gitInitBare(remotePath);
+
+  await gitPush(localPath);
 }
 
 export async function gitAddRemote(path: string, url: string) {
-  return asyncExec(`cd ${path}; git remote add origin ${url}`);
+  const rpath = resolve(path);
+  return asyncExec(`git -C ${rpath} remote add origin ${url}`);
+}
+
+export async function gitCommit(path: string, message: string) {
+  const rpath = resolve(path);
+  await asyncExec(`git -C ${rpath} add .`);
+  try {
+    await asyncExec(`git -C ${rpath} commit -m ${shellescape([message])}`);
+  } catch (e) {
+    if (e instanceof AsyncExecError) {
+      if (e.stdout.includes("nothing to commit")) {
+        return;
+      } else {
+        throw e;
+      }
+    } else {
+      throw e;
+    }
+  }
+}
+
+export async function gitPush(path: string) {
+  return await asyncExec(`cd ${path}; git push -f origin master 1>&2`);
 }

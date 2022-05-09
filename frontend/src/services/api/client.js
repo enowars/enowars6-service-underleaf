@@ -8,6 +8,9 @@ import {
   downloadFileUrl,
   uploadFileUrl,
   compileUrl,
+  commitUrl,
+  pushUrl,
+  pullUrl,
 } from "./urls";
 
 const client = axios.create();
@@ -76,4 +79,16 @@ export function uploadFile(id, file, data) {
 
 export function compileProject(id, file) {
   return client.post(compileUrl + "/" + id, { file });
+}
+
+export function commitProject(id, message) {
+  return client.post(commitUrl + "/" + id, { message });
+}
+
+export function pushProject(id) {
+  return client.get(pushUrl + "/" + id);
+}
+
+export function pullProject(id) {
+  return client.get(pullUrl + "/" + id);
 }

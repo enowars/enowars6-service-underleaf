@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="text-align: center">
     <b-table :items="filesItems" striped hover>
       <template v-slot:cell(name)="row">
         <div @click="$emit('selected', row.item.name)" style="cursor: pointer">

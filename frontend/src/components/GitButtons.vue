@@ -19,7 +19,9 @@
       </li>
       <li><b-button variant="primary" @click="push">↑ Push</b-button></li>
       <li><b-button variant="warning" @click="pull">↓ Pull</b-button></li>
-      <li><b-button variant="dark" @click="clone">→ Copy remote url</b-button></li>
+      <li>
+        <b-button variant="dark" @click="clone">→ Copy remote url</b-button>
+      </li>
     </ul>
   </div>
 </template>
@@ -50,8 +52,8 @@ export default {
       this.$emit("reloadFile");
     },
     clone() {
-      navigator.clipboard.writeText(`${window.location.origin}/git/${this.id}`); 
-    }
+      navigator.clipboard.writeText(`${window.location.origin}/git/${this.id}`);
+    },
   },
 };
 </script>

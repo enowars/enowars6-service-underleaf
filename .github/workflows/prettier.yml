@@ -4,8 +4,19 @@ jobs:
   prettier:
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
         with:
           persist-credentials: false
           fetch-depth: 1
-      - run: prettier --check .
+      
+      - name: Use Node.js 15.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 15.x
+      
+      - name: install prettier
+        run: npm install -g prettier
+
+      - name: Run prettier
+        run: prettier --check .

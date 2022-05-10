@@ -1,0 +1,28 @@
+name: Build project
+on: [push]
+jobs:
+  build-frontend:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: build frontend
+        working-directory: service/
+        run: docker-compose build --no-cache frontend
+
+  build-backend:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: build frontend
+        working-directory: service/
+        run: docker-compose build --no-cache backend

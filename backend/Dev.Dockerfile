@@ -1,7 +1,5 @@
 FROM node:latest
 
-USER node
-
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -9,5 +7,7 @@ COPY package.json package-lock.json ./
 RUN npm install --include=dev
 
 COPY . .
+
+USER node
 
 ENTRYPOINT [ "npm", "run", "dev" ]

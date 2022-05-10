@@ -16,6 +16,10 @@ class AsyncExecError extends Error {
   }
 }
 
+function escapeString(input:string):string{
+  return shellescape([input]);
+}
+
 export function asyncExec(command: string) {
   return new Promise((resolve, reject) => {
     exec(command, (error, stdout, stderr) => {
@@ -34,16 +38,16 @@ export function gitInit(path: string) {
 
 export function gitConfigName(path: string) {
   const rpath = resolve(path);
-  return asyncExec(`git -C ${rpath} config user.name underleaf`);
+  return asyncExec(`git -C ${escapeString(rpath)} config user.name underleaf`);
 }
 
 export function gitConfigEmail(path: string) {
   const rpath = resolve(path);
-  return asyncExec(`git -C ${rpath} config user.email underleaf@example.com`);
+  return asyncExec(`git -C ${escapeString(rpath)} config user.email underleaf@example.com`);
 }
 
 function gitInitBare(path: string) {
-  return asyncExec(`git init --bare ${path}`);
+  return asyncExec(`git init --bare ${escapeString(path)}`);
 }
 
 export async function gitSetupProject(
@@ -106,14 +110,14 @@ export async function gitSetupProject(
 
 export async function gitAddRemote(path: string, url: string) {
   const rpath = resolve(path);
-  return asyncExec(`git -C ${rpath} remote add origin ${url}`);
+  return asyncExec(`git -C ${escapeString(rpath)} remote add origin ${escapeString(url)}`);
 }
 
 export async function gitCommit(path: string, message: string) {
   const rpath = resolve(path);
   await asyncExec(`git -C ${rpath} add .`);
   try {
-    await asyncExec(`git -C ${rpath} commit -m ${shellescape([message])}`);
+    await asyncExec(`git -C ${escapeString(rpath)} commit -m ${escapeString(message)}`);
   } catch (e) {
     if (e instanceof AsyncExecError) {
       if (e.stdout.includes("nothing to commit")) {
@@ -128,5 +132,5 @@ export async function gitCommit(path: string, message: string) {
 }
 
 export async function gitPush(path: string) {
-  return await asyncExec(`cd ${path}; git push -f origin master 1>&2`);
+  return await asyncExec(`cd ${escapeString(path)}; git push -f origin master 1>&2`);
 }

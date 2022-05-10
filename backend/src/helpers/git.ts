@@ -16,7 +16,7 @@ class AsyncExecError extends Error {
   }
 }
 
-function escapeString(input:string):string{
+function escapeString(input: string): string {
   return shellescape([input]);
 }
 
@@ -43,7 +43,9 @@ export function gitConfigName(path: string) {
 
 export function gitConfigEmail(path: string) {
   const rpath = resolve(path);
-  return asyncExec(`git -C ${escapeString(rpath)} config user.email underleaf@example.com`);
+  return asyncExec(
+    `git -C ${escapeString(rpath)} config user.email underleaf@example.com`
+  );
 }
 
 function gitInitBare(path: string) {
@@ -110,14 +112,18 @@ export async function gitSetupProject(
 
 export async function gitAddRemote(path: string, url: string) {
   const rpath = resolve(path);
-  return asyncExec(`git -C ${escapeString(rpath)} remote add origin ${escapeString(url)}`);
+  return asyncExec(
+    `git -C ${escapeString(rpath)} remote add origin ${escapeString(url)}`
+  );
 }
 
 export async function gitCommit(path: string, message: string) {
   const rpath = resolve(path);
   await asyncExec(`git -C ${rpath} add .`);
   try {
-    await asyncExec(`git -C ${escapeString(rpath)} commit -m ${escapeString(message)}`);
+    await asyncExec(
+      `git -C ${escapeString(rpath)} commit -m ${escapeString(message)}`
+    );
   } catch (e) {
     if (e instanceof AsyncExecError) {
       if (e.stdout.includes("nothing to commit")) {
@@ -132,5 +138,7 @@ export async function gitCommit(path: string, message: string) {
 }
 
 export async function gitPush(path: string) {
-  return await asyncExec(`cd ${escapeString(path)}; git push -f origin master 1>&2`);
+  return await asyncExec(
+    `cd ${escapeString(path)}; git push -f origin master 1>&2`
+  );
 }

@@ -9,6 +9,9 @@ import { getProjectCompilePath, getProjectPath } from "../helpers/project";
 import { latexDockerImage } from "./constats";
 import { Container } from "node-docker-api/lib/container";
 
+import Nonce from "./nonceSchema";
+import crypto from "crypto";
+
 const actionTimeout = 1000;
 
 function trimmedBufferToString(buffer: Buffer): string {
@@ -18,16 +21,40 @@ function trimmedBufferToString(buffer: Buffer): string {
 async function removeContainer(container: Container) {
   try {
     await container.kill();
-  } catch (e) {}
+  } catch (e) { }
   try {
     await container.delete({ force: true });
-  } catch {}
+  } catch { }
 }
 
 export const compileProject: RequestHandler = async (req, res) => {
   if (!req.body.file) {
     res.status(400).json({ status: "no file provided" });
+    return;
   }
+
+  if (!req.body.proofOfWork) {
+    res.status(400).json({ status: "no proof of work provided" });
+    return;
+  }
+
+  const nonce = new Uint32Array([Number.parseInt(req.body.proofOfWork, 16)]);
+  
+  const hash = crypto.createHash('sha256').update(nonce).digest('hex').substring(0, 8);
+
+  if (!hash.endsWith('0000')) {
+    res.status(400).json({ status: "proof of work is too low" });
+    return;
+  }
+  
+  const n = new Nonce({nonce:req.body.proofOfWork});
+  try{
+    await n.save();
+  }catch(e){
+    res.status(400).json({ status: "proof of work is already used" });
+    return;
+  }
+
 
   const container = await docker.container.create({
     Image: latexDockerImage,

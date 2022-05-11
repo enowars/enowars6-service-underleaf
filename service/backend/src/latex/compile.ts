@@ -21,10 +21,10 @@ function trimmedBufferToString(buffer: Buffer): string {
 async function removeContainer(container: Container) {
   try {
     await container.kill();
-  } catch (e) { }
+  } catch (e) {}
   try {
     await container.delete({ force: true });
-  } catch { }
+  } catch {}
 }
 
 export const compileProject: RequestHandler = async (req, res) => {
@@ -39,22 +39,25 @@ export const compileProject: RequestHandler = async (req, res) => {
   }
 
   const nonce = new Uint32Array([Number.parseInt(req.body.proofOfWork, 16)]);
-  
-  const hash = crypto.createHash('sha256').update(nonce).digest('hex').substring(0, 8);
 
-  if (!hash.endsWith('0000')) {
+  const hash = crypto
+    .createHash("sha256")
+    .update(nonce)
+    .digest("hex")
+    .substring(0, 8);
+
+  if (!hash.endsWith("0000")) {
     res.status(400).json({ status: "proof of work is too low" });
     return;
   }
-  
-  const n = new Nonce({nonce:req.body.proofOfWork});
-  try{
+
+  const n = new Nonce({ nonce: req.body.proofOfWork });
+  try {
     await n.save();
-  }catch(e){
+  } catch (e) {
     res.status(400).json({ status: "proof of work is already used" });
     return;
   }
-
 
   const container = await docker.container.create({
     Image: latexDockerImage,

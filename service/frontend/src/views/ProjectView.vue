@@ -1,5 +1,5 @@
 <template>
-  <splitpanes class="default-theme" vertical style="height: 100vh">
+  <splitpanes class="default-theme" vertical style="height: 100vh" @resize="onResizeStart" @resized="onResizeEnd">
     <pane
       style="
         overflow-y: auto;
@@ -20,7 +20,7 @@
       <latex-editor :id="id" ref="editor" @compile="compile"></latex-editor>
     </pane>
     <pane style="overflow-y: auto">
-      <pdf-viewer :src="pdfUrl" ref="viewer"></pdf-viewer>
+      <pdf-viewer :id="id" ref="viewer"></pdf-viewer>
     </pane>
   </splitpanes>
 </template>
@@ -127,6 +127,12 @@ export default {
     },
     async realoadFile() {
       this.$refs.editor.realoadFile();
+    },
+    onResizeStart(){
+      this.$refs.viewer.setResizing(true);
+    },
+    onResizeEnd(){
+      this.$refs.viewer.setResizing(false);
     },
   },
 };

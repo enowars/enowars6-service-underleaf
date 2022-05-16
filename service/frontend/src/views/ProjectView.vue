@@ -1,5 +1,11 @@
 <template>
-  <splitpanes class="default-theme" vertical style="height: 100vh" @resize="onResizeStart" @resized="onResizeEnd">
+  <splitpanes
+    class="default-theme"
+    vertical
+    style="height: 100vh"
+    @resize="onResizeStart"
+    @resized="onResizeEnd"
+  >
     <pane
       style="
         overflow-y: auto;
@@ -128,10 +134,10 @@ export default {
     async realoadFile() {
       this.$refs.editor.realoadFile();
     },
-    onResizeStart(){
+    onResizeStart() {
       this.$refs.viewer.setResizing(true);
     },
-    onResizeEnd(){
+    onResizeEnd() {
       this.$refs.viewer.setResizing(false);
     },
   },

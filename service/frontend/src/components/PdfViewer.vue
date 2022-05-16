@@ -13,51 +13,59 @@
 import { getOutput } from "../services/api/client";
 
 export default {
-  props:{
+  props: {
     id: {
       type: String,
-      required: true
-    }
+      required: true,
+    },
   },
   data() {
     return {
       loading: true,
       resizeTimeoutId: null,
-      resizeing: false
-    }
+      resizeing: false,
+    };
   },
   methods: {
     setLoading() {
       this.loading = true;
     },
     async loadDocument() {
-      const {data} = await getOutput(this.id);
-      
+      const { data } = await getOutput(this.id);
+
       this.data = data;
       this.realoadDocument();
 
       this.resize();
     },
-    realoadDocument(){
-      const blobUrl = URL.createObjectURL(new Blob([this.data], {type: "application/pdf"}));
-      this.$refs.embed.src = blobUrl + '#toolbar=0';
+    realoadDocument() {
+      const blobUrl = URL.createObjectURL(
+        new Blob([this.data], { type: "application/pdf" })
+      );
+      this.$refs.embed.src = blobUrl + "#toolbar=0";
       this.loading = false;
     },
-    resize(){
-      if(!(this.loading || this.resizeing) && this.$refs?.container?.parentElement){
-        const {width, height} = this.$refs.container.parentElement.getBoundingClientRect();
+    resize() {
+      if (
+        !(this.loading || this.resizeing) &&
+        this.$refs?.container?.parentElement
+      ) {
+        const { width, height } =
+          this.$refs.container.parentElement.getBoundingClientRect();
 
-        const dimsChanged = this.$refs.embed.width !== width || this.$refs.embed.height !== height; 
-        
+        const dimsChanged =
+          this.$refs.embed.width !== width ||
+          this.$refs.embed.height !== height;
+
         this.$refs.embed.width = width;
         this.$refs.embed.height = height;
 
-        if(dimsChanged){
+        if (dimsChanged) {
           this.realoadDocument();
         }
       }
     },
-    setResizing(val){
+    setResizing(val) {
       this.resizeing = val;
     },
   },
@@ -66,6 +74,6 @@ export default {
     new ResizeObserver(this.resize.bind(this)).observe(
       this.$refs.container.parentElement
     );
-  }
+  },
 };
 </script>

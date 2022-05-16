@@ -95,5 +95,5 @@ export function pullProject(id) {
 }
 
 export function getOutput(id) {
-  return client.get(outputUrl + "/" + id, {responseType: 'arraybuffer'});
+  return client.get(outputUrl + "/" + id, { responseType: "arraybuffer" });
 }

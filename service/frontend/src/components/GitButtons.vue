@@ -40,10 +40,10 @@ export default {
       required: true,
     },
   },
-  data(){
+  data() {
     return {
       commitMessage: "",
-    }
+    };
   },
   methods: {
     commit() {

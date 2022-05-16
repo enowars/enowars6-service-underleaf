@@ -16,7 +16,6 @@ export const latexUrl = "/api/latex";
 export const compileUrl = latexUrl + "/compile";
 export const outputUrl = latexUrl + "/output";
 
-
 export const gitUrl = "/api/git";
 export const commitUrl = gitUrl + "/commit";
 export const pushUrl = gitUrl + "/push";

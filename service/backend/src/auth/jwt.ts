@@ -1,12 +1,10 @@
 import jwt from "jsonwebtoken";
 import { randomBytes } from "crypto";
 
-
 let secret: string | undefined = undefined;
 
 export function getJwtSecret() {
-  
-  if(!secret) {
+  if (!secret) {
     secret = randomBytes(256).toString("hex");
   }
 

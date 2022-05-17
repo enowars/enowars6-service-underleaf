@@ -5,7 +5,7 @@ let secret: string | undefined = undefined;
 
 export function getJwtSecret() {
   if (!secret) {
-    secret = randomBytes(256).toString("hex");
+    secret = process.env.JWT_SECRET || randomBytes(256).toString("hex");
   }
 
   return secret;

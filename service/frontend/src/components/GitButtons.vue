@@ -40,6 +40,11 @@ export default {
       required: true,
     },
   },
+  data() {
+    return {
+      commitMessage: "",
+    };
+  },
   methods: {
     commit() {
       commitProject(this.id, this.commitMessage);

@@ -11,6 +11,7 @@ import {
   commitUrl,
   pushUrl,
   pullUrl,
+  outputUrl,
 } from "./urls";
 
 const client = axios.create();
@@ -91,4 +92,8 @@ export function pushProject(id) {
 
 export function pullProject(id) {
   return client.get(pullUrl + "/" + id);
+}
+
+export function getOutput(id) {
+  return client.get(outputUrl + "/" + id, { responseType: "arraybuffer" });
 }

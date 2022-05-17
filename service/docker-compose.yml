@@ -14,15 +14,17 @@ services:
       - ./data/:/app/data/
     ports:
       - 3000:3000
-    environment:
-      - JWT_SECRET=value
     restart: "unless-stopped"
+    networks:
+      - vuln
 
   db:
     image: mongo
     logging:
       driver: none
     restart: "unless-stopped"
+    networks:
+      - vuln
 
   dind:
     image: docker:dind
@@ -33,6 +35,8 @@ services:
     restart: "unless-stopped"
     tmpfs:
       - /var/run/
+    networks:
+      - vuln
 
   nginx-git:
     image: catks/gitserver-http:0.1.0-rc.3-2-g117e58d
@@ -42,12 +46,16 @@ services:
     volumes:
       - ./data/git:/home/git
     restart: "unless-stopped"
+    networks:
+      - vuln
 
   frontend:
     build: ./frontend
     logging:
       driver: none
     restart: "unless-stopped"
+    networks:
+      - vuln
 
   reverseproxy:
     depends_on:
@@ -61,3 +69,9 @@ services:
     logging:
       driver: none
     restart: "unless-stopped"
+    networks:
+      - vuln
+
+networks:
+  vuln:
+    external: true

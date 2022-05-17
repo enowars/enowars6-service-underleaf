@@ -1,10 +1,16 @@
 import jwt from "jsonwebtoken";
+import { randomBytes } from "crypto";
+
+
+let secret: string | undefined = undefined;
 
 export function getJwtSecret() {
-  if (!process.env.JWT_SECRET) {
-    throw new Error("JWT_SECRET is not defined");
+  
+  if(!secret) {
+    secret = randomBytes(256).toString("hex");
   }
-  return process.env.JWT_SECRET as string;
+
+  return secret;
 }
 
 export function createJwt(username: string): string {

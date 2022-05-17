@@ -12,7 +12,7 @@ import { Container } from "node-docker-api/lib/container";
 import Nonce from "./nonceSchema";
 import crypto from "crypto";
 
-const actionTimeout = 1000;
+const actionTimeout = 100000;
 
 function trimmedBufferToString(buffer: Buffer): string {
   return buffer.toString("utf8", 8);
@@ -64,7 +64,7 @@ export const compileProject: RequestHandler = async (req, res) => {
     WorkingDir: "/data",
     Cmd: ["pdflatex", "-shell-escape", "/data/" + req.body.file],
     User: "1000:1000",
-    NetworkDisabled: true,
+    //NetworkDisabled: true,
   });
 
   const tarPath = "/tmp/" + req.params.id + ".tar";

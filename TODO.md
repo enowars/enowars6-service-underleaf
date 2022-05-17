@@ -1,5 +1,1 @@
 - generate secure jwt keys
-- file limits
-- docker queue
-- PoW
-- S/O check for bind mount over docker api

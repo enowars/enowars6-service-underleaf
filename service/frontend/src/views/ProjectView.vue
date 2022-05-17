@@ -15,11 +15,11 @@
       "
       size="12"
     >
-      <file-list :id="id" @selected="onFileSelected"></file-list>
+      <file-list ref="fileList" :id="id" @selected="onFileSelected"></file-list>
       <git-buttons
         :id="id"
         style="margin-top: auto"
-        @reloadFile="realoadFile"
+        @reloadFile="reloadFile"
       ></git-buttons>
     </pane>
     <pane style="overflow-y: auto">
@@ -131,8 +131,9 @@ export default {
       }
       this.$refs.viewer.loadDocument();
     },
-    async realoadFile() {
-      this.$refs.editor.realoadFile();
+    async reloadFile() {
+      this.$refs.editor.reloadFile();
+      this.$refs.fileList.loadFiles();
     },
     onResizeStart() {
       this.$refs.viewer.setResizing(true);

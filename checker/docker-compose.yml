@@ -11,6 +11,7 @@ services:
       - MONGO_PORT=27017
       - MONGO_USER=underleaf_checker_user
       - MONGO_PASSWORD=underleaf_checker_password
+      - NOT_ENOCHECKER_TEST=${NOT_ENOCHECKER_TEST}
     networks:
       - vuln
 
@@ -28,3 +29,4 @@ services:
 
 networks:
   vuln:
+    external: true

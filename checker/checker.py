@@ -4,11 +4,11 @@ import os
 from typing import Optional, Tuple
 from logging import LoggerAdapter
 
-from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTaskMessage, HavocCheckerTaskMessage, ExploitCheckerTaskMessage, ChainDB
+from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTaskMessage, HavocCheckerTaskMessage, ExploitCheckerTaskMessage, ChainDB, MumbleException
 from enochecker3.utils import assert_equals, assert_in
 from httpx import AsyncClient, Response, RequestError
 
-service_port = 4242
+service_port = 4243 if os.environ["NOT_ENOCHECKER_TEST"] == "true" else 80
 
 checker = Enochecker("underleaf", service_port)
 app = lambda: checker.app

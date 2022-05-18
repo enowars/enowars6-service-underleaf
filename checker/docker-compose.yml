@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  underleaf-checker:
+    build: .
+    ports:
+      - 8198:8000
+    environment:
+     - MONGO_ENABLED=1
+     - MONGO_HOST=underleaf-checker-db
+     - MONGO_PORT=27017
+     - MONGO_USER=underleaf_checker_user
+     - MONGO_PASSWORD=underleaf_checker_password
+    networks:
+      - vuln
+
+  underleaf-checker-db:
+    image: mongo
+    volumes:
+      - ./underleaf-checker-db:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: underleaf_checker_user
+      MONGO_INITDB_ROOT_PASSWORD: underleaf_checker_password
+    logging:
+      driver: none
+    networks:
+      - vuln
+
+networks:
+  vuln:
+    external: true

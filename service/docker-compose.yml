@@ -67,7 +67,7 @@ services:
     volumes:
       - ./reverseproxy/nginx.conf:/etc/nginx/nginx.conf
     ports:
-      - 80:80
+      - 4242:80
     logging:
       driver: none
     restart: "unless-stopped"

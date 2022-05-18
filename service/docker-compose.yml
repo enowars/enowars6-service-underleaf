@@ -76,4 +76,3 @@ services:
 
 networks:
   vuln:
-    external: true

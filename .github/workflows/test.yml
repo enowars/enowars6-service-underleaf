@@ -21,7 +21,7 @@ jobs:
       - name: Run service
         run: |
           cd service
-          docker network create vuln
+          docker network create vuln || true
           docker-compose up -d
 
       - name: Run checker

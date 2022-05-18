@@ -8,7 +8,7 @@ from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTas
 from enochecker3.utils import assert_equals, assert_in
 from httpx import AsyncClient, Response, RequestError
 
-service_port = 80
+service_port = 4242 if "NOT_ENOCHECKER_TEST" in os.environ else 80
 
 checker = Enochecker("underleaf", service_port)
 app = lambda: checker.app

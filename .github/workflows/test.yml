@@ -22,11 +22,13 @@ jobs:
         run: |
           cd service
           docker network create vuln || true
+          docker-compose build
           docker-compose up -d
 
       - name: Run checker
         run: |
           cd checker
+          docker-compose build
           docker-compose up -d
 
       - name: Run enochecker_Test

@@ -138,12 +138,20 @@ async def putflag_zero(task: PutflagCheckerTaskMessage, client: AsyncClient, db:
 
 @checker.getflag(0)
 async def getflag_zero(task: GetflagCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> str:    
-    await login_user(client, *await db.get("credentials"))
+    try:
+        (username, password) = await db.get("credentials")
+    except KeyError:
+        raise MumbleException("Missing database entry from putflag")
 
-    (_, id) = await db.get("project")
+    await login_user(client, username, password, logger)
+
+    try:
+        (_, id) = await db.get("project")
+    except KeyError:
+        raise MumbleException("Missing database entry from putflag")
 
 
-    assert_equals(await download_file(client, id, 'main.tex'), task.flag, "flag dose not match")
+    assert_equals(await download_file(client, id, 'main.tex', logger), task.flag, "flag dose not match")
 
 def os_succ(code):
     if code != 0:

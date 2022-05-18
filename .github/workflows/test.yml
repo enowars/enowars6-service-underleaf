@@ -35,3 +35,22 @@ jobs:
           ENOCHECKER_TEST_SERVICE_ADDRESS: reverseproxy
           ENOCHECKER_TEST_CHECKER_ADDRESS: localhost
           ENOCHECKER_TEST_CHECKER_PORT: 4243
+
+      - name: Create log
+        if: ${{ failure() }}
+        run: docker logs underleaf-checker &> log.txt
+
+      - name: "Upload Artifact"
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: Checker log
+          path: log.txt
+
+      - name: Stop containers
+        if: ${{ always() }}
+        run: |
+          cd service
+          docker-compose kill
+          cd ../checker
+          docker-compose kill

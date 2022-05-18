@@ -2,6 +2,7 @@ version: "3"
 
 services:
   underleaf-checker:
+    container_name: underleaf-checker
     build: .
     ports:
       - 4243:8000

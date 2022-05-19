@@ -38,16 +38,27 @@ jobs:
           ENOCHECKER_TEST_CHECKER_ADDRESS: localhost
           ENOCHECKER_TEST_CHECKER_PORT: 4243
 
-      - name: Create log
+      - name: Create checker log
         if: ${{ failure() }}
-        run: docker logs underleaf-checker &> log.txt
-
-      - name: "Upload Artifact"
+        run: docker logs underleaf-checker &> checker-log.txt
+      
+      - name: "Upload checker log"
         if: ${{ failure() }}
         uses: actions/upload-artifact@v3
         with:
           name: Checker log
-          path: log.txt
+          path: checker-log.txt
+
+      - name: "Create service log"
+        if: ${{ failure() }}
+        run: docker logs underleaf-backend &> service-log.txt
+
+      - name: "Upload service log"
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: Service log
+          path: service-log.txt
 
       - name: Stop containers
         if: ${{ always() }}

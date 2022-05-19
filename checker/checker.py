@@ -339,6 +339,8 @@ async def putnoise_file_git(task: PutnoiseCheckerTaskMessage, client: AsyncClien
 
     await cleanup_clone(path)
 
+    await pull(client, id, logger)
+
 
 @checker.getnoise(1)
 async def getnoise_file_git(task: GetnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter):
@@ -350,8 +352,6 @@ async def getnoise_file_git(task: GetnoiseCheckerTaskMessage, client: AsyncClien
         raise MumbleException("getnoise w/o putnoise")
 
     await login_user(client, username, password, logger)
-
-    await pull(client, id, logger)
 
     if await download_file(client, id, noise_name, logger) != noise:
         raise MumbleException("Noise not present")

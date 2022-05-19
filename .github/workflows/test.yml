@@ -56,3 +56,7 @@ jobs:
           docker-compose kill
           cd ../checker
           docker-compose kill
+
+      - name: Remove leftovers
+        if: ${{ always() }}
+        run: sudo rm -rf ./service/data

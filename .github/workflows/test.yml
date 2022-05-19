@@ -9,3 +9,67 @@ jobs:
 
       - name: Set up Python 3.9
         uses: actions/setup-python@v2
+
+      - name: Install enochecker_test
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade enochecker-test
+
+      - name: Change Networking
+        run: "echo '    external: true' >> service/docker-compose.yml"
+
+      - name: Run service
+        run: |
+          cd service
+          docker network create vuln || true
+          docker-compose build
+          docker-compose up -d
+
+      - name: Run checker
+        run: |
+          cd checker
+          docker-compose build
+          docker-compose up -d
+
+      - name: Run enochecker_Test
+        run: enochecker_test
+        env:
+          ENOCHECKER_TEST_SERVICE_ADDRESS: reverseproxy
+          ENOCHECKER_TEST_CHECKER_ADDRESS: localhost
+          ENOCHECKER_TEST_CHECKER_PORT: 4243
+
+      - name: Create checker log
+        if: ${{ failure() }}
+        run: docker logs underleaf-checker &> checker-log.txt
+
+      - name: "Upload checker log"
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: Checker log
+          path: checker-log.txt
+
+      - name: "Create service log"
+        if: ${{ failure() }}
+        run: docker logs underleaf-backend &> service-log.txt
+
+      - name: "Upload service log"
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: Service log
+          path: service-log.txt
+
+      - name: Stop containers
+        if: ${{ always() }}
+        run: |
+          cd service
+          docker-compose kill
+          docker-compose rm -f
+          cd ../checker
+          docker-compose kill
+          docker-compose rm -f
+
+      - name: Remove leftovers
+        if: ${{ always() }}
+        run: sudo rm -rf ./service/data

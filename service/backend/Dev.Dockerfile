@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 
-RUN npm install --include=dev
+RUN npm install --include=dev && npm i -g ts-node-dev
 
 COPY . .
 

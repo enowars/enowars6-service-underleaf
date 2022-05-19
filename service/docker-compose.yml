@@ -6,6 +6,7 @@ services:
       - dind
       - db
       - nginx-git
+      - permission-fixer
     build:
       context: ./backend
       dockerfile: Dev.Dockerfile # use the Dev.Dockerfile for development
@@ -43,6 +44,8 @@ services:
   nginx-git:
     image: catks/gitserver-http:0.1.0-rc.3-2-g117e58d
     user: 1000:1000
+    depends_on:
+      - permission-fixer
     logging:
       driver: none
     volumes:
@@ -67,12 +70,18 @@ services:
     volumes:
       - ./reverseproxy/nginx.conf:/etc/nginx/nginx.conf
     ports:
-      - 4242:80
+      - 4242:4242
     logging:
       driver: none
     restart: "unless-stopped"
     networks:
       - vuln
+
+  permission-fixer:
+    image: alpine
+    command: ["/bin/sh", "-c", "mkdir -p /data/git/; mkdir -p /data/projects/; chown -R 1000:1000 /data"]
+    volumes:
+      - ./data/:/data
 
 networks:
   vuln:

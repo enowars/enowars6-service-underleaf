@@ -57,7 +57,7 @@ jobs:
           docker-compose rm -f
           cd ../checker
           docker-compose kill
-          docker-compse rm -f
+          docker-compose rm -f
 
       - name: Remove leftovers
         if: ${{ always() }}

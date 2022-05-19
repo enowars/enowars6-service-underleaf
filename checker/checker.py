@@ -4,7 +4,7 @@ import os
 from typing import Optional, Tuple
 from logging import LoggerAdapter
 
-from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTaskMessage, HavocCheckerTaskMessage, ExploitCheckerTaskMessage, ChainDB, MumbleException
+from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTaskMessage, HavocCheckerTaskMessage, ExploitCheckerTaskMessage, PutnoiseCheckerTaskMessage, GetnoiseCheckerTaskMessage, ChainDB, MumbleException
 from enochecker3.utils import assert_equals, assert_in
 from httpx import AsyncClient, Response, RequestError
 
@@ -133,13 +133,57 @@ async def pull(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> N
     response_ok(response, "pulling failed", logger)
 
 
-@checker.putflag(0)
-async def putflag_zero(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> str:
+async def create_user_and_project(client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> Tuple[str, str, str, str]:
     (username, password, _) = await register_user(client, logger)
-    await db.set("credentials", (username, password))
+
+    if db is not None:
+        await db.set("credentials", (username, password))
 
     (name, id) = await create_project(client, logger)
-    await db.set("project", (name, id))
+
+    if db is not None:
+        await db.set("project", (name, id))
+
+    return username, password, name, id
+
+dev_null = "  > /dev/null 2>&1"
+
+
+async def clone_project(username: str, password: str, id: str, address: str) -> str:
+    # clone the repo onto the checker
+    git_url = f"http://{username}:{password}@{address}:{service_port}/git/{id}"
+
+    if os.system(f"git -C /tmp/ clone {git_url} {dev_null}") != 0:
+        raise MumbleException("git clone failed")
+
+    # check, that the file is present
+    assert_equals(os.path.exists(f"/tmp/{id}/"), True, "git clone failed")
+
+    return f"/tmp/{id}"
+
+
+async def cleanup_clone(path: str):
+    os_succ(os.system(f"rm -rf {path} {dev_null}"))
+
+
+async def git_config_commit_and_push(path: str, username: str, message: str):
+    # commit it
+    os_succ(os.system(
+        f"git -C {path} config user.email \"{username}@example.com\" {dev_null}"))
+    os_succ(
+        os.system(f"git -C {path} config user.name \"{username}\" {dev_null}"))
+
+    os_succ(os.system(f"git -C {path} add . {dev_null}"))
+    os_succ(os.system(f"git -C {path} commit -m '{message}' {dev_null}"))
+
+    # push it onto the server
+    if os.system(f"git -C {path} push {dev_null}") != 0:
+        raise MumbleException("git push failed")
+
+
+@checker.putflag(0)
+async def putflag_zero(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> str:
+    (_, _, _, id) = await create_user_and_project(client, db, logger)
 
     await upload_file(client, id, "main.tex", task.flag, logger)
 
@@ -169,9 +213,8 @@ def os_succ(code):
 
 
 @checker.havoc(0)
-async def havoc_test_git(task: HavocCheckerTaskMessage, client: AsyncClient, logger: LoggerAdapter) -> None:
-    (username, password, _) = await register_user(client, logger)
-    (_, id) = await create_project(client, logger)
+async def havoc_test_git(task: HavocCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> None:
+    (username, password, _, id) = await create_user_and_project(client, db, logger)
 
     # upload a file to the project
     file_content = secrets.token_hex(32)
@@ -228,21 +271,12 @@ async def havoc_test_git(task: HavocCheckerTaskMessage, client: AsyncClient, log
 
 @checker.exploit(0)
 async def exploit_zero(task: ExploitCheckerTaskMessage, client: AsyncClient, logger: LoggerAdapter) -> str:
-    (username, password, _) = await register_user(client, logger)
-    (_, id) = await create_project(client, logger)
+    (username, password, _, id) = await create_user_and_project(client, None, logger)
 
-    dev_null = "  > /dev/null 2>&1"
+    path = await clone_project(username, password, id, task.address)
 
-    # clone the repo onto the checker
-    git_url = f"http://{username}:{password}@{task.address}:{service_port}/git/{id}"
-
-    if os.system(f"git -C /tmp/ clone {git_url} {dev_null}") != 0:
-        raise MumbleException("git clone failed")
-
-    # check, that the file is present
-    assert_equals(os.path.exists(f"/tmp/{id}/"), True, "git clone failed")
     assert_equals(os.path.exists(
-        f"/tmp/{id}/main.tex"), True, "file not created")
+        f"{path}/main.tex"), True, "file not created")
 
     # add a symlink
     f_id = task.attack_info
@@ -253,27 +287,80 @@ async def exploit_zero(task: ExploitCheckerTaskMessage, client: AsyncClient, log
     os_succ(os.system(f"ln -s {target} /tmp/{id}/link"))
     os_succ(os.system(f"rm -rf {target} {dev_null}"))
 
-    # commit it
-    os_succ(os.system(
-        f"git -C /tmp/{id} config user.email \"{username}@example.com\" {dev_null}"))
-    os_succ(
-        os.system(f"git -C /tmp/{id} config user.name \"{username}\" {dev_null}"))
+    await git_config_commit_and_push(path, username, "Exploit!")
 
-    os_succ(os.system(f"git -C /tmp/{id} add . {dev_null}"))
-    os_succ(os.system(f"git -C /tmp/{id} commit -m 'Exploit!' {dev_null}"))
-
-    # push it onto the server
-    if os.system(f"git -C /tmp/{id} push {dev_null}") != 0:
-        raise MumbleException("git push failed")
-
-    # cleanup
-    os_succ(os.system(f"rm -rf /tmp/{id}/ {dev_null}"))
+    await cleanup_clone(path)
 
     # let the server pull the changes
     await pull(client, id, logger)
 
     # get flag
     return await download_file(client, id, "link", logger)
+
+
+@checker.putnoise(0)
+async def putnoise_file_content(task: PutnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter):
+    (_, _, _, id) = await create_user_and_project(client, db, logger)
+
+    noise_name = secrets.token_hex(16)
+    noise = secrets.token_hex(32)
+
+    await upload_file(client, id, noise_name, noise, logger)
+    await db.set("noise", (noise_name, noise))
+
+
+@checker.getnoise(0)
+async def getnoise_file_content(task: GetnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter):
+    try:
+        (username, password) = await db.get("credentials")
+        (name, id) = await db.get("project")
+        (noise_name, noise) = await db.get("noise")
+    except KeyError:
+        raise MumbleException("getnoise w/o putnoise")
+
+    await login_user(client, username, password, logger)
+    if await download_file(client, id, noise_name, logger) != noise:
+        raise MumbleException()
+
+
+@checker.putnoise(1)
+async def putnoise_file_git(task: PutnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter):
+    (username, password, _, id) = await create_user_and_project(client, db, logger)
+
+    path = await clone_project(username, password, id, task.address)
+
+    noise_name = secrets.token_hex(16)
+    noise = secrets.token_hex(32)
+
+    open(f"{path}/{noise_name}", "w").write(noise)
+    await git_config_commit_and_push(path, username, "I hope i am not too loud")
+
+    await db.set("noise", (noise_name, noise))
+
+    await cleanup_clone(path)
+
+
+@checker.getnoise(1)
+async def getnoise_file_git(task: GetnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter):
+    try:
+        (username, password) = await db.get("credentials")
+        (name, id) = await db.get("project")
+        (noise_name, noise) = await db.get("noise")
+    except KeyError:
+        raise MumbleException("getnoise w/o putnoise")
+
+    await login_user(client, username, password, logger)
+
+    await pull(client, id, logger)
+
+    if await download_file(client, id, noise_name, logger) != noise:
+        raise MumbleException("Noise not present")
+
+    path = await clone_project(username, password, id, task.address)
+    if open(f"{path}/{noise_name}", "r").read() != noise:
+        raise MumbleException("Noise not present")
+
+    await cleanup_clone(path)
 
 if __name__ == "__main__":
     checker.run()

@@ -4,7 +4,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { promises } from "dns";
 
-if(typeof process.env.DOCKER_CERT_PATH === "undefined") {
+if (typeof process.env.DOCKER_CERT_PATH === "undefined") {
   throw Error("DOCKER_CERT_PATH is not defined");
 }
 
@@ -20,17 +20,15 @@ const promisifyStream = (stream: any) =>
   });
 
 setTimeout(async () => {
+  const __docker = new Docker({
+    protocol: "https",
+    host: (await promises.lookup("dind")).address, // yes this is needed, the ca valid for the host 'dind'
+    port: 2376,
+    ca: readFileSync(join(certPath, "ca.pem")),
+    cert: readFileSync(join(certPath, "cert.pem")),
+    key: readFileSync(join(certPath, "key.pem")),
+  });
 
-  const __docker = new Docker(
-    { 
-      protocol: "https",
-      host: (await promises.lookup("dind")).address, // yes this is needed, the ca valid for the host 'dind'
-      port: 2376,
-      ca: readFileSync(join(certPath, 'ca.pem')),
-      cert: readFileSync(join(certPath, 'cert.pem')),
-      key: readFileSync(join(certPath, 'key.pem'))
-    });
-  
   Object.assign(_docker, __docker);
 
   // dind takes some time to boot up, so we wait a bit

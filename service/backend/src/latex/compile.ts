@@ -64,7 +64,7 @@ export const compileProject: RequestHandler = async (req, res) => {
     WorkingDir: "/data",
     Cmd: ["pdflatex", "-shell-escape", "/data/" + req.body.file],
     //User: "1000:1000",
-    //NetworkMode: "overlay",
+    NetworkMode: "host",
     //NetworkDisabled: false,
   });
 

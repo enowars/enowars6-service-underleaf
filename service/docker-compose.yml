@@ -14,9 +14,11 @@ services:
     volumes:
       #- ./backend:/app # allows reloading of code
       - ./data/:/app/data/
+      - docker-cert:/cert
     ports:
       - 3000:3000
     environment:
+      - DOCKER_CERT_PATH=/cert/client
       - JWT_SECRET=value # do not use in production
     restart: "unless-stopped"
     networks:
@@ -33,12 +35,15 @@ services:
   dind:
     image: docker:dind
     privileged: true
-    entrypoint: dockerd --host=tcp://0.0.0.0:80 --tls=false
+    environment:
+      - DOCKER_TLS_CERTDIR=/certs
     logging:
       driver: none
     restart: "unless-stopped"
     tmpfs:
       - /var/run/
+    volumes:
+      - docker-cert:/certs
     networks:
       - vuln
 
@@ -88,6 +93,9 @@ services:
       ]
     volumes:
       - ./data/:/data
+
+volumes:
+  docker-cert:
 
 networks:
   vuln:

@@ -10,7 +10,7 @@ if(typeof process.env.DOCKER_CERT_PATH === "undefined") {
 
 const certPath = process.env.DOCKER_CERT_PATH;
 
-let _docker: Docker = undefined as any;
+let _docker: Docker = {} as any;
 
 const promisifyStream = (stream: any) =>
   new Promise((resolve, reject) => {
@@ -21,7 +21,7 @@ const promisifyStream = (stream: any) =>
 
 setTimeout(async () => {
 
-  _docker = new Docker(
+  const __docker = new Docker(
     { 
       protocol: "https",
       host: (await promises.lookup("dind")).address, // yes this is needed, the ca valid for the host 'dind'
@@ -30,6 +30,8 @@ setTimeout(async () => {
       cert: readFileSync(join(certPath, 'cert.pem')),
       key: readFileSync(join(certPath, 'key.pem'))
     });
+  
+  Object.assign(_docker, __docker);
 
   // dind takes some time to boot up, so we wait a bit
   const requiredImages = [

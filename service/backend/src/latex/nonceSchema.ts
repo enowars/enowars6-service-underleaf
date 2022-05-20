@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const nonceSchema = new mongoose.Schema({
   nonce: {
     type: String,
+    immutable: true,
     required: true,
     unique: true,
   },

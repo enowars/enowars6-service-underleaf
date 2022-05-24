@@ -43,14 +43,11 @@ export const compileProject: RequestHandler = async (req, res) => {
   const poW = req.body.proofOfWork;
   const nonce = new TextEncoder().encode(poW);
 
-  const hash = crypto
-    .createHash("sha256")
-    .update(nonce)
-    .digest("hex")
+  const hash = crypto.createHash("sha256").update(nonce).digest("hex");
 
   if (!hash.endsWith("0000")) {
     console.log("invalid proof of work");
-    console.log({hash, poW})
+    console.log({ hash, poW });
     res.status(400).json({ status: "proof of work is too low" });
     return;
   }
@@ -84,7 +81,7 @@ export const compileProject: RequestHandler = async (req, res) => {
   ) as any;
 
   if ((await Promise.any([timeout(actionTimeout), tarProm])) === "timeout") {
-    console.log("tar")
+    console.log("tar");
     res.status(400).json({ status: "tar timed out" });
     return;
   }
@@ -111,7 +108,7 @@ export const compileProject: RequestHandler = async (req, res) => {
       container.wait(),
     ]);
   } catch {
-    console.log("container")
+    console.log("container");
     res.status(500).json({ status: "could not create continer." });
     return;
   }
@@ -134,7 +131,7 @@ export const compileProject: RequestHandler = async (req, res) => {
       ]);
     } catch {
       removeContainer(container);
-      console.log(output)
+      console.log(output);
       res.status(400).json({ status: "compile failed", output });
       return;
     }
@@ -145,7 +142,7 @@ export const compileProject: RequestHandler = async (req, res) => {
   if (finish !== "timeout") {
     res.json(status_ok);
   } else {
-    console.log("container timeout")
+    console.log("container timeout");
     res.status(400).send({ status: "container timed out", output });
   }
 };

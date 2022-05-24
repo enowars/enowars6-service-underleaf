@@ -32,9 +32,7 @@ setTimeout(async () => {
   Object.assign(_docker, __docker);
 
   // dind takes some time to boot up, so we wait a bit
-  const requiredImages = [
-    { name: latexDockerImage, tag: "latest" },
-  ];
+  const requiredImages = [{ name: latexDockerImage, tag: "latest" }];
 
   for (const requiredImage of requiredImages) {
     _docker.image

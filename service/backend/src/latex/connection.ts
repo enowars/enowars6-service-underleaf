@@ -33,9 +33,7 @@ setTimeout(async () => {
 
   // dind takes some time to boot up, so we wait a bit
   const requiredImages = [
-    { name: "alpine", tag: "latest" },
     { name: latexDockerImage, tag: "latest" },
-    { name: "hllm/latexindent", tag: "latest" },
   ];
 
   for (const requiredImage of requiredImages) {

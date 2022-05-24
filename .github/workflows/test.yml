@@ -15,15 +15,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade enochecker-test
 
-      - name: Change Networking
-        run: "echo '    external: true' >> service/docker-compose.yml"
-
       - name: Run service
         run: |
           cd service
-          docker network create vuln || true
           docker-compose build
           docker-compose up -d
+
+      - name: Wait for dind
+        run: while true; do docker logs underleaf-backend | grep Digest && break; done
 
       - name: Run checker
         run: |
@@ -34,8 +33,8 @@ jobs:
       - name: Run enochecker_Test
         run: enochecker_test
         env:
-          ENOCHECKER_TEST_SERVICE_ADDRESS: reverseproxy
-          ENOCHECKER_TEST_CHECKER_ADDRESS: localhost
+          ENOCHECKER_TEST_SERVICE_ADDRESS: 172.17.0.1
+          ENOCHECKER_TEST_CHECKER_ADDRESS: 172.17.0.1
           ENOCHECKER_TEST_CHECKER_PORT: 4243
 
       - name: Create checker log
@@ -65,7 +64,7 @@ jobs:
         run: |
           cd service
           docker-compose kill
-          docker-compose rm -f
+          docker-compose rm backend db nginx-git frontend reverseproxy permission-fixer -f
           cd ../checker
           docker-compose kill
           docker-compose rm -f

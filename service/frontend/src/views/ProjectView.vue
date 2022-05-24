@@ -40,6 +40,25 @@ import PdfViewer from "../components/PdfViewer.vue";
 import { compileProject } from "../services/api/client";
 import GitButtons from "../components/GitButtons.vue";
 
+const byteToHex = [];
+
+for (let n = 0; n <= 0xff; ++n)
+{
+    const hexOctet = n.toString(16).padStart(2, "0");
+    byteToHex.push(hexOctet);
+}
+
+function hex(arrayBuffer)
+{
+    const buff = new Uint8Array(arrayBuffer);
+    const hexOctets = []; // new Array(buff.length) is even faster (preallocates necessary array size), then use hexOctets[i] instead of .push()
+
+    for (let i = 0; i < buff.length; ++i)
+        hexOctets.push(byteToHex[buff[i]]);
+
+    return hexOctets.join("");
+}
+
 export default {
   name: "ProjectView",
   components: {
@@ -63,57 +82,19 @@ export default {
       this.$refs.editor.changeFile(file);
       await this.compile(file);
     },
-    countZeroInUint32(x) {
-      let n = 32;
-      let y = 0;
-
-      y = x >> 16;
-      if (y != 0) {
-        n = n - 16;
-        x = y;
-      }
-      y = x >> 8;
-      if (y != 0) {
-        n = n - 8;
-        x = y;
-      }
-      y = x >> 4;
-      if (y != 0) {
-        n = n - 4;
-        x = y;
-      }
-      y = x >> 2;
-      if (y != 0) {
-        n = n - 2;
-        x = y;
-      }
-      y = x >> 1;
-      if (y != 0) return n - 2;
-      return n - x;
-    },
-
-    async proofOfWork(difficulty) {
-      const msgBuffer = new Uint32Array([
-        Math.floor(Math.random() * 0xffffffff),
-      ]);
+    async proofOfWork() {
+      const encoder = new TextEncoder();
       // eslint-disable-next-line
-      while (true) {
-        const hashedArray = await crypto.subtle.digest("SHA-256", msgBuffer);
-        const hashed = new Uint32Array(hashedArray);
-        // count the number of leading zeros
-        let count = 0;
-        inner: for (let i = 0; i < hashed.byteLength; i++) {
-          if (hashed[i] == 0) {
-            count += 32;
-          } else {
-            count += this.countZeroInUint32(hashed[i]);
-            break inner;
-          }
+      while(true){
+        const proof = Math.round(Math.random()*16**8).toString(16);
+        const hash = hex(await crypto.subtle.digest("SHA-256", encoder.encode(proof)));
+        if(hash.endsWith('0000')){
+          console.log("using", {proof, hash});
+          return proof;
+        }else if(hash.endsWith("00")){
+          console.log("trying...", {proof, hash});
         }
-        if (count >= difficulty) {
-          return msgBuffer[0].toString(16);
-        }
-        msgBuffer[0]++;
+        
       }
     },
     async compile(file) {
@@ -122,7 +103,7 @@ export default {
       const resp = await compileProject(
         this.id,
         file,
-        await this.proofOfWork(16)
+        await this.proofOfWork()
       );
       if (resp.data.status !== "ok") {
         console.error(resp.data.output);

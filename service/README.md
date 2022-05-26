@@ -5,19 +5,28 @@ Have you head of [overleaf](https://overleaf.com)[¹](https://github.com/overlea
 But other than that is the same.
 
 ## Usage
+
 ### Production
+
 ```
 docker-compose up --build
 ```
-The service is now available on port `4242`. 
+
+The service is now available on port `4242`.
+
 ### Devolopment
+
 1. Configure code reloading for the backend (may not work on windows)
+
 - Change the `Dockerfile` used by the `backend` to use `Dev.Dockerfile`
 - add the volume `./backend:/app` to the `backend`
 - set the backend enviroment variable `JWT_SECRET` to some value
+
 2. Configure code reloading for the frontend
+
 - Run `npm run serve` in `./frontend`
-The service is now available on port `8080`.
+  The service is now available on port `8080`.
 
 ## Tips
+
 - The first startup will take some time, as the image `texlive/texlive` gets downloaded.

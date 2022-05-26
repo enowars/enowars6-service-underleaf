@@ -34,5 +34,7 @@ export const httpBasic: RequestHandler = async (req, res, next) => {
     }
 
     res.status(401).json({ status: "unauthorized" });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };

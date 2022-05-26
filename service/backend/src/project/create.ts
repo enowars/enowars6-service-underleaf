@@ -38,5 +38,7 @@ export const createProject: RequestHandler = async (req, res, next) => {
     await proj.save();
 
     res.json({ id, ...status_ok });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };

@@ -21,5 +21,7 @@ export const login: RequestHandler = async (req, res, next) => {
     }
 
     res.status(401).json({ status: "Invalid login" });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };

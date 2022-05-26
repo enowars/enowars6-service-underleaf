@@ -10,5 +10,7 @@ export const pushProject: RequestHandler = async (req, res, next) => {
     await gitPush(path);
 
     res.send(status_ok);
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };

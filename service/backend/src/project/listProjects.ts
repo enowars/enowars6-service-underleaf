@@ -13,5 +13,7 @@ export const listProjects: RequestHandler = async (req, res, next) => {
     });
 
     res.json({ projects: cleanedProjects, ...status_ok });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };

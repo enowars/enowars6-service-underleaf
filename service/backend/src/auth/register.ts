@@ -36,5 +36,7 @@ export const register: RequestHandler = async (req, res, next) => {
       return;
     }
     res.status(400).send({ status: "invalid username or password." });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };

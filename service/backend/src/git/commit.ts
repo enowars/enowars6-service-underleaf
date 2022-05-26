@@ -10,5 +10,7 @@ export const commitProject: RequestHandler = async (req, res, next) => {
     await gitCommit(path, req.body.message);
 
     res.send(status_ok);
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };

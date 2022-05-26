@@ -21,10 +21,10 @@ function trimmedBufferToString(buffer: Buffer): string {
 async function removeContainer(container: Container) {
   try {
     await container.kill();
-  } catch (e) { }
+  } catch (e) {}
   try {
     await container.delete({ force: true });
-  } catch { }
+  } catch {}
 }
 
 export const compileProject: RequestHandler = async (req, res, next) => {
@@ -146,7 +146,9 @@ export const compileProject: RequestHandler = async (req, res, next) => {
       console.log("container timeout");
       res.status(400).send({ status: "container timed out", output });
     }
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 function timeout(time: number): Promise<string> {

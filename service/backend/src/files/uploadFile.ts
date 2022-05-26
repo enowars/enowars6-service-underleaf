@@ -36,5 +36,7 @@ export const uploadFile: RequestHandler = async function (req, res, next) {
     } else {
       res.json({ status: "Do not try to hack me!" });
     }
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };

@@ -11,5 +11,7 @@ export const pullProject: RequestHandler = async (req, res, next) => {
     );
 
     res.send(status_ok);
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };

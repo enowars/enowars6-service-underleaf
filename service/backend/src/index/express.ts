@@ -28,9 +28,9 @@ app.use("/latex", latexRouter);
 app.use("/auth", authRouter);
 
 app.use((err: any, req: any, res: any, next: any) => {
-  if(err){
+  if (err) {
     console.error(err);
-    res.status(500).json({status: "Internal error"});
+    res.status(500).json({ status: "Internal error" });
   }
 });
 

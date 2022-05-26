@@ -25,7 +25,13 @@ app.use("/files", filesRouter);
 app.use("/project", projectRouter);
 app.use("/git", gitRouter);
 app.use("/latex", latexRouter);
-
 app.use("/auth", authRouter);
+
+app.use((err: any, req: any, res: any, next: any) => {
+  if(err){
+    console.error(err);
+    res.status(500).json({status: "Internal error"});
+  }
+});
 
 export default app;

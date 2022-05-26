@@ -32,7 +32,9 @@ async function getFiles(dir: string) {
   return result;
 }
 
-export const listFiles: RequestHandler = async function (req, res) {
-  const path = getProjectPath(req.params.id);
-  res.json({ files: await getFiles(path), ...status_ok });
+export const listFiles: RequestHandler = async function (req, res, next) {
+  try{
+    const path = getProjectPath(req.params.id);
+    res.json({ files: await getFiles(path), ...status_ok });
+  }catch(e){next(e);}
 };

@@ -39,6 +39,6 @@ setTimeout(async () => {
       .create({}, { fromImage: requiredImage.name, tag: requiredImage.tag })
       .then((stream) => promisifyStream(stream));
   }
-}, 1000);
+}, 100);
 
 export const docker = _docker;

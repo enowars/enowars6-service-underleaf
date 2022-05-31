@@ -67,6 +67,11 @@ export const compileProject: RequestHandler = async (req, res, next) => {
       WorkingDir: "/data",
       Cmd: ["pdflatex", "-shell-escape", "/data/" + req.body.file],
       User: "1000:1000",
+      HostConfig: {
+        Memory: 32 * 1024 * 1024,
+        PidsLimit: 64,
+      },
+      CpuPercent: 25,
       NetworkMode: "host",
     });
 

@@ -11,7 +11,13 @@
     <b-button v-b-modal.new-file-modal variant="success"
       >Create new file</b-button
     >
-    <b-button class="m-md-2" @click="$emit('selected', this.selectedFile)" v-b-tooltip.hover title="Ctrl+S">Compile</b-button>
+    <b-button
+      class="m-md-2"
+      @click="$emit('selected', this.selectedFile)"
+      v-b-tooltip.hover
+      title="Ctrl+S"
+      >Compile</b-button
+    >
     <b-modal
       centered
       id="new-file-modal"
@@ -61,8 +67,8 @@ export default {
     this.loadFiles();
   },
   methods: {
-    changeFile(row){
-      this.$emit('selected', row.item.name);
+    changeFile(row) {
+      this.$emit("selected", row.item.name);
       this.selectedFile = row.item.name;
     },
     async loadFiles() {
@@ -82,7 +88,10 @@ export default {
         this.newfileName = "/" + this.newfileName;
       }
 
-      await uploadFile(this.id, this.newfileName, `\\documentclass[12pt]{scrartcl}
+      await uploadFile(
+        this.id,
+        this.newfileName,
+        `\\documentclass[12pt]{scrartcl}
 \\usepackage[utf8]{inputenc}
    
 \\title{Title}
@@ -94,7 +103,8 @@ export default {
   \\begin{center}
     \\LaTeX is \\textit{sus}!
   \\end{center}
-\\end{document}`);
+\\end{document}`
+      );
       this.$emit("selected", this.newfileName);
       this.selectedFile = this.newfileName;
       await this.loadFiles();

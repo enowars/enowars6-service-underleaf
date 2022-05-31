@@ -46,11 +46,11 @@ export default {
     },
     async changeFile(file) {
       await this.saveFile();
-      
-      if(this.currentFile != file){
+
+      if (this.currentFile != file) {
         this.currentFile = file;
         this.code = (await downloadFile(this.id, file)).data.toString();
-      }else{
+      } else {
         this.$emit("compile", this.currentFile);
       }
     },

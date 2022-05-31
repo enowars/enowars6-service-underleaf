@@ -1,11 +1,8 @@
 <template>
   <div ref="container">
-    <div :style="loading || resizeing ? 'display: none' : ''">
+    <b-overlay :show="loading" opacity="0.4" variant="white">
       <embed ref="embed" type="application/pdf" />
-    </div>
-    <div v-if="loading" class="text-center" style="margin-top: 50vh">
-      <b-spinner variant="primary" size="lg"></b-spinner>
-    </div>
+    </b-overlay>
   </div>
 </template>
 

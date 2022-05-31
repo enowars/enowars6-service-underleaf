@@ -30,6 +30,7 @@ client.interceptors.response.use(
   (response) => {
     if (response.data.status && response.data.status !== "ok") {
       console.error(response.data.status);
+      alert(response.data.status);
     }
     return response;
   },

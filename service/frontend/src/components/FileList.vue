@@ -74,7 +74,19 @@ export default {
         this.newfileName = "/" + this.newfileName;
       }
 
-      await uploadFile(this.id, this.newfileName, "");
+      await uploadFile(this.id, this.newfileName, `\\documentclass[12pt]{scrartcl}
+\\usepackage[utf8]{inputenc}
+   
+\\title{Title}
+\\author{Author}
+\\date{\\today}
+    
+\\begin{document}
+  \\maketitle
+  \\begin{center}
+    \\LaTeX is \\textit{sus}!
+  \\end{center}
+\\end{document}`);
       this.$emit("selected", this.newfileName);
       await this.loadFiles();
     },

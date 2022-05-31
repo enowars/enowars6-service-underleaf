@@ -20,7 +20,8 @@
       <li><b-button variant="primary" @click="push">↑ Push</b-button></li>
       <li><b-button variant="warning" @click="pull">↓ Pull</b-button></li>
       <li>
-        <b-button variant="dark" @click="clone">→ Copy remote url</b-button>
+        <b-button variant="dark" @click="clone" v-b-tooltip.hover
+      title="Copys the url to clone this project via git">→ Copy remote url</b-button>
       </li>
     </ul>
   </div>

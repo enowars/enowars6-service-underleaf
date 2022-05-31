@@ -9,6 +9,12 @@ from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTas
 from enochecker3.utils import assert_equals, assert_in
 from httpx import AsyncClient, Response, RequestError
 
+service_port = 4242
+
+def os_succ(code):
+    if code != 0:
+        raise Exception("Internal error os command failed")
+
 def response_ok(response: Response, message: str, logger: LoggerAdapter) -> dict:
     assert_equals(response.status_code, 200, message)
 

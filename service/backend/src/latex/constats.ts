@@ -1,1 +1,1 @@
-export const latexDockerImage = "thomasweise/docker-texlive-thin";
+export const latexDockerImage = "texlive/texlive";

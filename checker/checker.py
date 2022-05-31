@@ -9,8 +9,6 @@ from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTas
 from enochecker3.utils import assert_equals, assert_in
 from util import *
 
-service_port = 4242
-
 checker = Enochecker("underleaf", service_port)
 def app(): return checker.app
 
@@ -41,11 +39,6 @@ async def getflag_zero(task: GetflagCheckerTaskMessage, client: AsyncClient, db:
         raise MumbleException("Missing database entry from putflag")
 
     assert_equals(await download_file(client, id, 'main.tex', logger), task.flag, "flag dose not match")
-
-
-def os_succ(code):
-    if code != 0:
-        raise Exception("Internal error os command failed")
 
 
 @checker.havoc(0)

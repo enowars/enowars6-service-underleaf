@@ -1,8 +1,8 @@
 <template>
   <div style="text-align: center">
-    <b-table :items="filesItems" striped hover>
+    <b-table :items="filesItems" striped hover :fields="['name']">
       <template v-slot:cell(name)="row">
-        <div @click="$emit('selected', row.item.name)" style="cursor: pointer">
+        <div @click="changeFile.call(this, row)" style="cursor: pointer">
           {{ row.item.name }}
         </div>
       </template>
@@ -11,6 +11,7 @@
     <b-button v-b-modal.new-file-modal variant="success"
       >Create new file</b-button
     >
+    <b-button class="m-md-2" @click="$emit('selected', this.selectedFile)" v-b-tooltip.hover title="Ctrl+S">Compile</b-button>
     <b-modal
       centered
       id="new-file-modal"
@@ -43,6 +44,7 @@ export default {
     return {
       files: [],
       newfileName: "",
+      selectedFile: "",
     };
   },
   computed: {
@@ -50,6 +52,7 @@ export default {
       return this.files.map((file) => {
         return {
           name: file,
+          _rowVariant: file === this.selectedFile ? "primary" : "",
         };
       });
     },
@@ -58,6 +61,10 @@ export default {
     this.loadFiles();
   },
   methods: {
+    changeFile(row){
+      this.$emit('selected', row.item.name);
+      this.selectedFile = row.item.name;
+    },
     async loadFiles() {
       let isFirst = false;
       if (this.files.length === 0) {
@@ -67,6 +74,7 @@ export default {
 
       if (isFirst) {
         this.$emit("selected", this.files[0]);
+        this.selectedFile = this.files[0];
       }
     },
     async createNewFile() {
@@ -88,6 +96,7 @@ export default {
   \\end{center}
 \\end{document}`);
       this.$emit("selected", this.newfileName);
+      this.selectedFile = this.newfileName;
       await this.loadFiles();
     },
   },

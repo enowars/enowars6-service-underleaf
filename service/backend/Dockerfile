@@ -1,4 +1,4 @@
-FROM node:18.2-alpine3.14
+FROM node:18.2-alpine3.14 as builder
 
 RUN apk add --no-cache git
 
@@ -12,6 +12,15 @@ COPY . .
 
 RUN npm run build
 
+FROM node:18.2-alpine3.14
+
+WORKDIR /app
+
+COPY package.json ./
+RUN npm install
+
+COPY --from=builder /app/dist ./dist
+
 USER node
 
-ENTRYPOINT [ "npm", "run", "start" ]
+ENTRYPOINT [ "node", "./dist/index.js" ]

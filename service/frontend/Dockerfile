@@ -10,12 +10,6 @@ COPY . .
 RUN npm run build
 
 
-FROM node:18.2-alpine3.14 as runner
+FROM nginx:alpine
 
-WORKDIR /app
-
-RUN npm i -g serve
-
-COPY --from=builder /app/dist ./dist
-
-ENTRYPOINT [ "serve", "-l", "80", "-s", "./dist" ]
+COPY --from=builder /app/dist /usr/share/nginx/html

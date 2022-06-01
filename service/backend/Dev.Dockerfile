@@ -1,5 +1,7 @@
 FROM node:18.2-alpine3.14
 
+RUN apk add --no-cache git
+
 WORKDIR /app
 
 COPY package.json package-lock.json ./

@@ -17,7 +17,7 @@ FROM node:18.2-alpine3.14
 WORKDIR /app
 
 COPY package.json ./
-RUN npm install
+RUN apk add --no-cache git && npm install
 
 COPY --from=builder /app/dist ./dist
 

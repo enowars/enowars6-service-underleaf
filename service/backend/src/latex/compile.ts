@@ -30,13 +30,11 @@ async function removeContainer(container: Container) {
 export const compileProject: RequestHandler = async (req, res, next) => {
   try {
     if (!req.body.file) {
-      console.log("no file");
       res.status(400).json({ status: "no file provided" });
       return;
     }
 
     if (!req.body.proofOfWork) {
-      console.log("no pwo");
       res.status(400).json({ status: "no proof of work provided" });
       return;
     }
@@ -47,8 +45,6 @@ export const compileProject: RequestHandler = async (req, res, next) => {
     const hash = crypto.createHash("sha256").update(nonce).digest("hex");
 
     if (!hash.endsWith("0000")) {
-      console.log("invalid proof of work");
-      console.log({ hash, poW });
       res.status(400).json({ status: "proof of work is too low" });
       return;
     }
@@ -57,7 +53,6 @@ export const compileProject: RequestHandler = async (req, res, next) => {
     try {
       await n.save();
     } catch (e) {
-      console.log("nonce already exists");
       res.status(400).json({ status: "proof of work is already used" });
       return;
     }
@@ -83,7 +78,6 @@ export const compileProject: RequestHandler = async (req, res, next) => {
     ) as any;
 
     if ((await Promise.any([timeout(actionTimeout), tarProm])) === "timeout") {
-      console.log("tar");
       res.status(400).json({ status: "tar timed out" });
       return;
     }
@@ -110,7 +104,6 @@ export const compileProject: RequestHandler = async (req, res, next) => {
         container.wait(),
       ]);
     } catch {
-      console.log("container");
       res.status(500).json({ status: "could not create continer." });
       return;
     }
@@ -133,7 +126,6 @@ export const compileProject: RequestHandler = async (req, res, next) => {
         ]);
       } catch {
         removeContainer(container);
-        console.log(output);
         res.status(400).json({ status: "compile failed", output });
         return;
       }
@@ -144,7 +136,6 @@ export const compileProject: RequestHandler = async (req, res, next) => {
     if (finish !== "timeout") {
       res.json(status_ok);
     } else {
-      console.log("container timeout");
       res.status(400).send({ status: "container timed out", output });
     }
   } catch (e) {

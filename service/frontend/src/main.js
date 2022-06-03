@@ -11,23 +11,9 @@ import BootstrapVue3 from "bootstrap-vue-3";
 
 import App from "./App.vue";
 
-import {
-  login,
-  register,
-  createProject,
-  listProjects,
-  downloadFile,
-  compileProject,
-} from "./services/api/client";
+import * as client from "./services/api/client";
 
-window.cli = {
-  login,
-  register,
-  createProject,
-  listProjects,
-  downloadFile,
-  compileProject,
-};
+window.cli = client;
 
 const routes = [
   { path: "/", component: MainView },

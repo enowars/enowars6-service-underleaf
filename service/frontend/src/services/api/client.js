@@ -13,7 +13,7 @@ import {
   pullUrl,
   outputUrl,
   deleteUserUrl,
-  deleteProjectUrl
+  deleteProjectUrl,
 } from "./urls";
 
 const client = axios.create();
@@ -57,7 +57,7 @@ export async function register(username, password) {
   return resp;
 }
 
-export function deleteUser(){
+export function deleteUser() {
   return client.get(deleteUserUrl);
 }
 

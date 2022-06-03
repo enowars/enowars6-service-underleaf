@@ -79,7 +79,7 @@ export default {
     },
     async deleteUser() {
       // eslint-disable-next-line
-      debugger
+      debugger;
       try {
         await deleteUser();
       } catch (e) {

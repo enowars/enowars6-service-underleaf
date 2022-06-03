@@ -65,6 +65,13 @@ async def login_user(client: AsyncClient, username: str, password: str, logger: 
 
     client.headers["Authorization"] = f"Bearer {json['token']}"
 
+async def delete_user(client: AsyncClient, logger: LoggerAdapter) -> None:
+    try:
+        response = await client.get("/api/auth/delete", follow_redirects=True)
+    except RequestError:
+        raise MumbleException("request error while deleting user")
+
+    response_ok(response, "deleting user failed", logger)
 
 async def create_project(client: AsyncClient, logger: LoggerAdapter) -> Tuple[str, str]:
     project_name = secrets.token_hex(8)
@@ -79,7 +86,6 @@ async def create_project(client: AsyncClient, logger: LoggerAdapter) -> Tuple[st
     assert_equals(True, json["id"].isalnum(), "creating project failed")
 
     return project_name, json["id"]
-
 
 async def upload_file(client: AsyncClient, project_id: str, filename: str, data: str, logger: LoggerAdapter) -> None:
     if not filename.startswith("/"):

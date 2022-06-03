@@ -96,6 +96,8 @@ async def havoc_test_git(task: HavocCheckerTaskMessage, client: AsyncClient, db:
     new_file_content_dl = await download_file(client, id, "newFile.tex", logger)
     assert_equals(new_file_content_dl, new_file_content,
                   "file content does not match")
+    
+    await delete_user(client, logger)
 
 @checker.havoc(1)
 async def havoc_test_latex(task: HavocCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> None:
@@ -124,6 +126,8 @@ async def havoc_test_latex(task: HavocCheckerTaskMessage, client: AsyncClient, d
 
     expected_output = "root"
     assert_equals(True, output.startswith(expected_output), "output does not match")
+
+    await delete_user(client, logger)
 
 
 @checker.exploit(0)
@@ -210,6 +214,8 @@ async def getnoise_file_content(task: GetnoiseCheckerTaskMessage, client: AsyncC
     await login_user(client, username, password, logger)
     if await download_file(client, id, noise_name, logger) != noise:
         raise MumbleException()
+    
+    await delete_user(client, logger)
 
 
 @checker.putnoise(1)
@@ -250,6 +256,8 @@ async def getnoise_file_git(task: GetnoiseCheckerTaskMessage, client: AsyncClien
         raise MumbleException("Noise not present")
 
     await cleanup_clone(path)
+
+    await delete_user(client, logger)
 
 
 if __name__ == "__main__":

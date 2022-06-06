@@ -5,11 +5,23 @@ from typing import Optional, Tuple
 from logging import LoggerAdapter
 import hashlib
 
-from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTaskMessage, HavocCheckerTaskMessage, ExploitCheckerTaskMessage, PutnoiseCheckerTaskMessage, GetnoiseCheckerTaskMessage, ChainDB, MumbleException, FlagSearcher
+from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTaskMessage, HavocCheckerTaskMessage, ExploitCheckerTaskMessage, PutnoiseCheckerTaskMessage, GetnoiseCheckerTaskMessage, ChainDB, MumbleException, FlagSearcher, OfflineException
 from enochecker3.utils import assert_equals, assert_in
 from httpx import AsyncClient, Response, RequestError
 
+from httpx import HTTPStatusError, TooManyRedirects, DecodingError, UnsupportedProtocol, ProtocolError, StreamError, TransportError
+
 service_port = 4242
+
+def handle_RequestError(err, msg):
+    if any(isinstance(err, T) for T in [HTTPStatusError, TooManyRedirects, DecodingError, UnsupportedProtocol, ProtocolError]):
+        raise MumbleException(msg)
+    elif any(isinstance(err, T) for T in [StreamError, TransportError]):
+        raise OfflineException(msg)
+    else:
+        err.message = msg + ": " + err.message
+        raise err
+
 
 def os_succ(code):
     if code != 0:
@@ -37,8 +49,8 @@ async def register_user(client: AsyncClient, logger: LoggerAdapter) -> Tuple[str
     password = secrets.token_hex(8)
     try:
         response = await client.post("/api/auth/register", data={"username": username, "password": password}, follow_redirects=True)
-    except RequestError:
-        raise MumbleException("request error while registering in")
+    except Exception as e:
+        handle_RequestError(e, "request error while registering")
 
     assert_equals(response.status_code, 200, "registration failed")
 
@@ -55,8 +67,8 @@ async def register_user(client: AsyncClient, logger: LoggerAdapter) -> Tuple[str
 async def login_user(client: AsyncClient, username: str, password: str, logger: LoggerAdapter) -> None:
     try:
         response = await client.post("/api/auth/login", data={"username": username, "password": password}, follow_redirects=True)
-    except RequestError:
-        raise MumbleException("request error while logging in")
+    except Exception as e:
+        handle_RequestError(e, "request error while logging in")
 
     json = response_ok(response, "logging in failed", logger)
 
@@ -68,8 +80,8 @@ async def login_user(client: AsyncClient, username: str, password: str, logger: 
 async def delete_user(client: AsyncClient, logger: LoggerAdapter) -> None:
     try:
         response = await client.get("/api/auth/delete", follow_redirects=True)
-    except RequestError:
-        raise MumbleException("request error while deleting user")
+    except Exception as e:
+        handle_RequestError(e, "request error while deleting user")
 
     response_ok(response, "deleting user failed", logger)
 
@@ -77,8 +89,8 @@ async def create_project(client: AsyncClient, logger: LoggerAdapter) -> Tuple[st
     project_name = secrets.token_hex(8)
     try:
         response = await client.post("/api/project/create", data={"name": project_name}, follow_redirects=True)
-    except RequestError:
-        raise MumbleException("request error while creating project")
+    except Exception as e:
+        handle_RequestError(e, "request error while creating project")
 
     json = response_ok(response, "creating project failed", logger)
     assert_in("id", json, "creating project failed")
@@ -93,8 +105,8 @@ async def upload_file(client: AsyncClient, project_id: str, filename: str, data:
 
     try:
         response = await client.post(f"/api/files/upload/{project_id}{filename}", files={'file': data.encode('utf-8')}, follow_redirects=True)
-    except RequestError:
-        raise MumbleException("request error while uploading file")
+    except Exception as e:
+        handle_RequestError(e, "request error while uploading file")
 
     response_ok(response, "uploading file failed", logger)
 
@@ -105,8 +117,8 @@ async def download_file(client: AsyncClient, project_id: str, filename: str, log
 
     try:
         response = await client.get(f"/api/files/download/{project_id}{filename}", follow_redirects=True)
-    except RequestError:
-        raise MumbleException("request error while downloading file")
+    except Exception as e:
+        handle_RequestError(e, "request error while downloading file")
 
     assert_equals(response.status_code, 200, "downloading file failed")
 
@@ -116,8 +128,8 @@ async def download_file(client: AsyncClient, project_id: str, filename: str, log
 async def commit(client: AsyncClient, project_id: str, message: str, logger: LoggerAdapter) -> None:
     try:
         response = await client.post(f"/api/git/commit/{project_id}", data={"message": message}, follow_redirects=True)
-    except RequestError:
-        raise MumbleException("request error while committing")
+    except Exception as e:
+        handle_RequestError(e, "request error while committing")
 
     response_ok(response, "committing failed", logger)
 
@@ -125,8 +137,8 @@ async def commit(client: AsyncClient, project_id: str, message: str, logger: Log
 async def push(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> None:
     try:
         response = await client.get(f"/api/git/push/{project_id}", follow_redirects=True)
-    except RequestError:
-        raise MumbleException("request error while pushing")
+    except Exception as e:
+        handle_RequestError(e, "request error while pushing")
 
     response_ok(response, "pushing failed", logger)
 
@@ -134,8 +146,8 @@ async def push(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> N
 async def pull(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> None:
     try:
         response = await client.get(f"/api/git/pull/{project_id}", follow_redirects=True)
-    except RequestError:
-        raise MumbleException("request error while pulling")
+    except Exception as e:
+        handle_RequestError(e, "request error while pulling")
 
     response_ok(response, "pulling failed", logger)
 
@@ -147,16 +159,16 @@ async def compile(client: AsyncClient, project_id: str, file:str, logger: Logger
 
     try:
         response = await client.post(f"/api/latex/compile/{project_id}", data={"file": file, "proofOfWork": proof_of_work}, follow_redirects=True)
-    except RequestError:
-        raise MumbleException("request error while compiling")
+    except Exception as e:
+        handle_RequestError(e, "request error while compiling")
 
     response_ok(response, "compiling failed", logger)
 
 async def download_pdf(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> str:
     try:
         response = await client.get(f"/api/latex/output/{project_id}", follow_redirects=True)
-    except RequestError:
-        raise MumbleException("request error while downloading file")
+    except Exception as e:
+        handle_RequestError(e, "request error while downloading pdf")
 
     assert_equals(response.status_code, 200, "downloading file failed")
 

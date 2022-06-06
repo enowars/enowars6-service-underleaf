@@ -151,9 +151,9 @@ async def pull(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> N
 
 async def compile(client: AsyncClient, project_id: str, file:str, logger: LoggerAdapter) -> None:
 
-    proof_of_work = os.urandom(4).hex()
+    proof_of_work = os.urandom(16).hex()
     while not hashlib.sha256(bytes(proof_of_work, "utf-8")).hexdigest().endswith("0000"):
-        proof_of_work = os.urandom(4).hex()
+        proof_of_work = os.urandom(16).hex()
 
     try:
         response = await client.post(f"/api/latex/compile/{project_id}", data={"file": file, "proofOfWork": proof_of_work}, follow_redirects=True)

@@ -28,18 +28,16 @@ def os_succ(code):
         raise Exception("Internal error os command failed")
 
 def response_ok(response: Response, message: str, logger: LoggerAdapter) -> dict:
-    assert_equals(response.status_code, 200, message)
-
     try:
         json = response.json()
     except json.JSONDecodeError:
         raise MumbleException(message)
 
-    assert_in("status", json, "test")
-    if json["status"] != "ok" and logger is not None:
-        logger.debug(json["message"])
+    assert_in("status", json, message + " status not found")
 
-    assert_equals(json["status"], "ok", "message")
+    assert_equals(json["status"], "ok", message + " status was not ok: " + json["status"])
+
+    assert_equals(response.status_code, 200, message + " status code was not 200")
 
     return json
 

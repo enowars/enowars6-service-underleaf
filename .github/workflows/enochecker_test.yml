@@ -67,7 +67,7 @@ jobs:
         run: |
           cd service
           docker-compose kill
-          docker-compose rm -f backend db nginx-git frontend reverseproxy permission-fixer
+          docker-compose rm -f
           cd ../checker
           docker-compose kill
           docker-compose rm -f

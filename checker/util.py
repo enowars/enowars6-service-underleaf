@@ -9,18 +9,15 @@ from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTas
 from enochecker3.utils import assert_equals, assert_in
 from httpx import AsyncClient, Response, RequestError
 
-from httpx import HTTPStatusError, TooManyRedirects, DecodingError, UnsupportedProtocol, ProtocolError, StreamError, TransportError
+from httpx import ConnectTimeout, NetworkError, PoolTimeout
 
 service_port = 4242
 
 def handle_RequestError(err, msg):
-    if any(isinstance(err, T) for T in [HTTPStatusError, TooManyRedirects, DecodingError, UnsupportedProtocol, ProtocolError]):
-        raise MumbleException(msg)
-    elif any(isinstance(err, T) for T in [StreamError, TransportError]):
-        raise OfflineException(msg)
-    else:
-        err.message = msg + ": " + err.message
-        raise err
+    if any(isinstance(err, T) for T in [ConnectTimeout, NetworkError, PoolTimeout]):
+        raise OfflineException(msg + ": " + str(err) + " " + type(err).__name__ + " the service is offline")
+
+    raise MumbleException(msg + ": " + str(err) + " " + type(err).__name__)
 
 
 def os_succ(code):
@@ -35,7 +32,7 @@ def response_ok(response: Response, message: str, logger: LoggerAdapter) -> dict
 
     assert_in("status", json, message + " status not found")
 
-    assert_equals(json["status"], "ok", message + " status was not ok: " + json["status"])
+    assert_equals(json["status"], "ok", message + " status was not ok: (was: " + json["status"] + ")")
 
     assert_equals(response.status_code, 200, message + " status code was not 200")
 

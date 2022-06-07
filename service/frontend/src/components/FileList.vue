@@ -91,7 +91,7 @@ export default {
       await uploadFile(
         this.id,
         this.newfileName,
-        `\\documentclass[12pt]{scrartcl}
+        `\\documentclass[12pt]{minimal}
 \\usepackage[utf8]{inputenc}
    
 \\title{Title}

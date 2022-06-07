@@ -66,7 +66,7 @@ export async function gitSetupProject(
   // copy default document over
   await promises.writeFile(
     resolve(localPath, "main.tex"),
-    `\\documentclass[12pt]{scrartcl}
+    `\\documentclass[12pt]{minimal}
 \\usepackage[utf8]{inputenc}
    
 \\title{Title}

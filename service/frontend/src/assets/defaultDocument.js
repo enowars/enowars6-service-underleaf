@@ -1,4 +1,4 @@
-export default `\\documentclass[12pt]{scrartcl}
+export default `\\documentclass[12pt]{minimal}
 
 \\usepackage[utf8]{inputenc}
 \\usepackage{layouts}

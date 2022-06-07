@@ -77,7 +77,7 @@ export const compileProject: RequestHandler = async (req, res, next) => {
       ["./"]
     ) as any;
 
-    if ((await Promise.any([timeout(actionTimeout), tarProm])) === "timeout") {
+    if ((await timeout(actionTimeout, tarProm)) === "timeout") {
       res.status(400).json({ status: "tar timed out" });
       return;
     }
@@ -99,10 +99,12 @@ export const compileProject: RequestHandler = async (req, res, next) => {
 
     let finish;
     try {
-      finish = await Promise.any([
-        timeout(actionTimeout * 1.5),
-        container.wait(),
-      ]);
+      if (
+        (await timeout(actionTimeout * 1.5, container.wait())) === "timeout"
+      ) {
+        res.status(400).json({ status: "compile timed out" });
+        return;
+      }
     } catch {
       res.status(500).json({ status: "could not create continer." });
       return;
@@ -118,12 +120,19 @@ export const compileProject: RequestHandler = async (req, res, next) => {
         })) as any;
         const output = createWriteStream(outputPath);
 
-        stream.pipe(output);
-
-        await Promise.any([
-          timeout(actionTimeout),
-          new Promise((resolve) => stream.on("finish", resolve)),
-        ]);
+        if (
+          (await timeout(
+            actionTimeout,
+            new Promise((resolve) => {
+              output.on("finish", resolve);
+              stream.pipe(output);
+            })
+          )) === "timeout"
+        ) {
+          removeContainer(container);
+          res.status(400).json({ status: "read file timed out" });
+          return;
+        }
       } catch {
         removeContainer(container);
         res.status(400).json({ status: "compile failed", output });
@@ -143,10 +152,21 @@ export const compileProject: RequestHandler = async (req, res, next) => {
   }
 };
 
-function timeout(time: number): Promise<string> {
-  return new Promise((resolve) =>
-    setTimeout(() => {
+function timeout<T>(time: number, prom: Promise<T>): Promise<T | string> {
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
       resolve("timeout");
-    }, time)
-  );
+    }, time);
+
+    prom.then(
+      (val: T) => {
+        clearTimeout(timeoutId);
+        resolve(val);
+      },
+      (val: T) => {
+        clearTimeout(timeoutId);
+        resolve(val);
+      }
+    );
+  });
 }

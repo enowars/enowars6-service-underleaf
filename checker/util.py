@@ -43,6 +43,7 @@ async def register_user(client: AsyncClient, logger: LoggerAdapter) -> Tuple[str
     username = secrets.token_hex(8)
     password = secrets.token_hex(8)
     try:
+        logger.info(f"registering user {username}:{password}")
         response = await client.post("/api/auth/register", data={"username": username, "password": password}, follow_redirects=True)
     except Exception as e:
         handle_RequestError(e, "request error while registering")
@@ -56,11 +57,14 @@ async def register_user(client: AsyncClient, logger: LoggerAdapter) -> Tuple[str
 
     client.headers["Authorization"] = f"Bearer {json['token']}"
 
+    logger.info(f"registered user {username}:{password} got token {json['token']}")
+    
     return username, password, json["token"]
 
 
 async def login_user(client: AsyncClient, username: str, password: str, logger: LoggerAdapter) -> None:
     try:
+        logger.info(f"logging in user {username}:{password}")
         response = await client.post("/api/auth/login", data={"username": username, "password": password}, follow_redirects=True)
     except Exception as e:
         handle_RequestError(e, "request error while logging in")
@@ -71,6 +75,7 @@ async def login_user(client: AsyncClient, username: str, password: str, logger: 
     assert_equals(True, len(json["token"]) > 0, "registration failed")
 
     client.headers["Authorization"] = f"Bearer {json['token']}"
+    logger.info(f"logged in user {username}:{password} got token {json['token']}")
 
 async def delete_user(client: AsyncClient, logger: LoggerAdapter) -> None:
     try:
@@ -79,6 +84,7 @@ async def delete_user(client: AsyncClient, logger: LoggerAdapter) -> None:
         handle_RequestError(e, "request error while deleting user")
 
     response_ok(response, "deleting user failed", logger)
+    logger.info("deleted user")
 
 async def create_project(client: AsyncClient, logger: LoggerAdapter) -> Tuple[str, str]:
     project_name = secrets.token_hex(8)
@@ -92,6 +98,8 @@ async def create_project(client: AsyncClient, logger: LoggerAdapter) -> Tuple[st
 
     assert_equals(True, json["id"].isalnum(), "creating project failed")
 
+    logger.info(f"created project {project_name} with id {json['id']}")
+
     return project_name, json["id"]
 
 async def upload_file(client: AsyncClient, project_id: str, filename: str, data: str, logger: LoggerAdapter) -> None:
@@ -103,6 +111,7 @@ async def upload_file(client: AsyncClient, project_id: str, filename: str, data:
     except Exception as e:
         handle_RequestError(e, "request error while uploading file")
 
+    logger.info(f"uploaded file {filename} to project {project_id} content: {data}")
     response_ok(response, "uploading file failed", logger)
 
 
@@ -117,7 +126,11 @@ async def download_file(client: AsyncClient, project_id: str, filename: str, log
 
     assert_equals(response.status_code, 200, "downloading file failed")
 
-    return response.content.decode('utf-8')
+    resp = response.content.decode('utf-8')
+    
+    logger.info(f"downloaded file {filename} from project {project_id} content: {resp}")
+
+    return resp
 
 
 async def commit(client: AsyncClient, project_id: str, message: str, logger: LoggerAdapter) -> None:
@@ -127,7 +140,7 @@ async def commit(client: AsyncClient, project_id: str, message: str, logger: Log
         handle_RequestError(e, "request error while committing")
 
     response_ok(response, "committing failed", logger)
-
+    logger.info(f"committed project {project_id} with message {message}")
 
 async def push(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> None:
     try:
@@ -136,6 +149,7 @@ async def push(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> N
         handle_RequestError(e, "request error while pushing")
 
     response_ok(response, "pushing failed", logger)
+    logger.info(f"pushed project {project_id}")
 
 
 async def pull(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> None:
@@ -145,6 +159,7 @@ async def pull(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> N
         handle_RequestError(e, "request error while pulling")
 
     response_ok(response, "pulling failed", logger)
+    logger.info(f"pulled project {project_id}")
 
 async def compile(client: AsyncClient, project_id: str, file:str, logger: LoggerAdapter) -> None:
 
@@ -158,6 +173,7 @@ async def compile(client: AsyncClient, project_id: str, file:str, logger: Logger
         handle_RequestError(e, "request error while compiling")
 
     response_ok(response, "compiling failed", logger)
+    logger.info(f"compiled project {project_id} with proof of work {proof_of_work}")
 
 async def download_pdf(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> str:
     try:
@@ -167,6 +183,7 @@ async def download_pdf(client: AsyncClient, project_id: str, logger: LoggerAdapt
 
     assert_equals(response.status_code, 200, "downloading file failed")
 
+    logger.info(f"downloaded pdf from project {project_id}")
     return response.content
 
 async def create_user_and_project(client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> Tuple[str, str, str, str]:
@@ -185,7 +202,7 @@ async def create_user_and_project(client: AsyncClient, db: ChainDB, logger: Logg
 dev_null = "  > /dev/null 2>&1"
 
 
-async def clone_project(username: str, password: str, id: str, address: str) -> str:
+async def clone_project(username: str, password: str, id: str, address: str, logger: LoggerAdapter) -> str:
     # clone the repo onto the checker
     git_url = f"http://{username}:{password}@{address}:{service_port}/git/{id}"
 
@@ -195,6 +212,7 @@ async def clone_project(username: str, password: str, id: str, address: str) -> 
     # check, that the file is present
     assert_equals(os.path.exists(f"/tmp/{id}/"), True, "git clone failed")
 
+    logger.info(f"cloned project {id}")
     return f"/tmp/{id}"
 
 
@@ -202,7 +220,7 @@ async def cleanup_clone(path: str):
     os_succ(os.system(f"rm -rf {path} {dev_null}"))
 
 
-async def git_config_commit_and_push(path: str, username: str, message: str):
+async def git_config_commit_and_push(path: str, username: str, message: str, logger: LoggerAdapter) -> None:
     # commit it
     os_succ(os.system(
         f"git -C {path} config user.email \"{username}@example.com\" {dev_null}"))
@@ -215,3 +233,5 @@ async def git_config_commit_and_push(path: str, username: str, message: str):
     # push it onto the server
     if os.system(f"git -C {path} push {dev_null}") != 0:
         raise MumbleException("git push failed")
+
+    logger.info(f"pushed project {path} with message {message} as {username}")

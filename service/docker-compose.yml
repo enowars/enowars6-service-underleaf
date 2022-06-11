@@ -10,9 +10,9 @@ services:
       - permission-fixer
     build:
       context: ./backend
-      dockerfile: Dockerfile # use the Dev.Dockerfile for development
+      dockerfile: Dev.Dockerfile # use the Dev.Dockerfile for development
     volumes:
-      #- ./backend:/app # allows reloading of code
+      - ./backend:/app # allows reloading of code
       - ./data/:/app/data/
       - docker-cert:/cert
     ports:
@@ -82,6 +82,12 @@ services:
         "-c",
         "mkdir -p /data/git/; mkdir -p /data/projects/; chown -R 1000:1000 /data",
       ]
+    volumes:
+      - ./data/:/data
+
+  cleaner:
+    image: alpine
+    command: ["/bin/sh", "-c", "while true; do find /data/git/* /data/projects/* /data/compile/* -maxdepth 1 -type d -mmin +20 -exec rm -rv {} +; echo 'Cleaned old projects'; sleep 1200; done"]
     volumes:
       - ./data/:/data
 

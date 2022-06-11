@@ -68,13 +68,8 @@ export async function gitSetupProject(
     resolve(localPath, "main.tex"),
     `\\documentclass[12pt]{minimal}
 \\usepackage[utf8]{inputenc}
-   
-\\title{Title}
-\\author{Author}
-\\date{\\today}
     
 \\begin{document}
-  \\maketitle
   \\begin{center}
     \\LaTeX is \\textit{sus}!
   \\end{center}

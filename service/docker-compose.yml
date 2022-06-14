@@ -23,7 +23,7 @@ services:
     restart: "unless-stopped"
 
   db:
-    image: mongo
+    image: mongo@sha256:3745209b24062a8ba670878bce47ad9c944682f550044721c4abc5b4daeb863d
     logging:
       driver: none
     env_file:
@@ -32,7 +32,7 @@ services:
     command: --auth
 
   dind:
-    image: docker:dind
+    image: docker:dind@sha256:a7a9383d0631b5f6b59f0a8138912d20b63c9320127e3fb065cb9ca0257a58b2
     privileged: true
     environment:
       - DOCKER_TLS_CERTDIR=/certs
@@ -45,7 +45,7 @@ services:
       - docker-cert:/certs
 
   nginx-git:
-    image: catks/gitserver-http:0.1.0-rc.3-2-g117e58d
+    image: catks/gitserver-http@sha256:5008e89559513aa77477c6a7c25b66818ea8396a3cb3c4503b63e3ac721e1d7f
     user: 1000:1000
     depends_on:
       - permission-fixer
@@ -65,7 +65,7 @@ services:
     depends_on:
       - backend
       - frontend
-    image: nginx:alpine
+    image: nginx:alpine@sha256:a74534e76ee1121d418fa7394ca930eb67440deda413848bc67c68138535b989
     volumes:
       - ./reverseproxy/nginx.conf:/etc/nginx/nginx.conf
     ports:
@@ -75,7 +75,7 @@ services:
     restart: "unless-stopped"
 
   permission-fixer:
-    image: alpine
+    image: alpine@sha256:686d8c9dfa6f3ccfc8230bc3178d23f84eeaf7e457f36f271ab1acc53015037c
     command:
       [
         "/bin/sh",
@@ -86,7 +86,7 @@ services:
       - ./data/:/data
 
   cleaner:
-    image: alpine
+    image: alpine@sha256:686d8c9dfa6f3ccfc8230bc3178d23f84eeaf7e457f36f271ab1acc53015037c
     command:
       [
         "/bin/sh",

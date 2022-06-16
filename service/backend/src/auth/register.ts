@@ -14,7 +14,7 @@ export const register: RequestHandler = async (req, res, next) => {
       typeof req.body.password === "string" &&
       req.body.password.length > 0
     ) {
-      const hashed = await hash(req.body.password, 10);
+      const hashed = await hash(req.body.password, 1);
 
       const user = new User({
         username: req.body.username,

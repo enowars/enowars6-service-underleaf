@@ -160,7 +160,6 @@ async def getnoise_file_content(task: GetnoiseCheckerTaskMessage, client: AsyncC
     if await download_file(client, id, noise_name, logger) != noise:
         raise MumbleException()
     
-    await delete_user(client, logger)
     logger.info("getnoise_file_content: success")
 
 

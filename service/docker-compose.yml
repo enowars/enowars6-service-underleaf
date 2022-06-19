@@ -17,8 +17,8 @@ services:
       - docker-cert:/cert
     ports:
       - 3000:3000
-    env_file:
-      - env.env
+    environment:
+      - DOCKER_CERT_PATH=/cert/client
 
     restart: "unless-stopped"
 
@@ -26,8 +26,9 @@ services:
     image: mongo@sha256:3745209b24062a8ba670878bce47ad9c944682f550044721c4abc5b4daeb863d
     logging:
       driver: none
-    env_file:
-      - env.env
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=password
     restart: "unless-stopped"
     command: --auth
 

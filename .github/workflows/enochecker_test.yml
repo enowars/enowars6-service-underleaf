@@ -15,9 +15,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade enochecker-test
 
-      - name: Genarete secrets
-        run: ./service/init-secrets.sh
-
       - name: Run service
         run: |
           cd service

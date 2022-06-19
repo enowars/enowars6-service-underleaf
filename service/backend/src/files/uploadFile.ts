@@ -14,7 +14,7 @@ export const uploadFile: RequestHandler = async function (req, res, next) {
     const path = resolve(projPath, reqPath);
 
     if (path.startsWith(projPath)) {
-      if (await exists(path) && !(await promises.lstat(path)).isFile()) {
+      if ((await exists(path)) && !(await promises.lstat(path)).isFile()) {
         res.status(403).send({ status: "path is a directory" });
         return;
       }

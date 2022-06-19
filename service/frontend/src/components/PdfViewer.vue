@@ -35,8 +35,8 @@ export default {
           JSON.parse(new TextDecoder().decode(data));
           return;
         }
-      // eslint-disable-next-line
-      }catch{}
+        // eslint-disable-next-line
+      } catch {}
 
       this.data = data;
       this.realoadDocument();

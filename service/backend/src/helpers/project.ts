@@ -37,7 +37,7 @@ export async function projectIsSafe(id: string): Promise<boolean> {
 export const reqProjectIdIsSafe: RequestHandler = async (req, res, next) => {
   const id = req.params.id || req.body.id;
 
-  if (typeof id === "string" && await projectIsSafe(id)) {
+  if (typeof id === "string" && (await projectIsSafe(id))) {
     next();
     return;
   }

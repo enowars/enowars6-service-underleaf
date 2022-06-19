@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 
 import { randomBytes } from "crypto";
-import { promises } from "fs";
+import { promises as fs } from "fs";
 import {
   getProjectPath,
   getProjectRemoteGitPath,
@@ -23,8 +23,8 @@ export const createProject: RequestHandler = async (req, res, next) => {
     const path = getProjectPath(id);
     const remotePath = getProjectRemoteGitPath(id);
 
-    await promises.mkdir(path, { recursive: true });
-    await promises.mkdir(remotePath, { recursive: true });
+    await fs.mkdir(path, { recursive: true });
+    await fs.mkdir(remotePath, { recursive: true });
 
     await gitSetupProject(path, remotePath, getRemoteGitUrl(id));
 

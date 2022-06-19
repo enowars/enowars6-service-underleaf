@@ -1,10 +1,11 @@
 import { resolve } from "path";
-import { promises, existsSync } from "fs";
+import { promises } from "fs";
 
 import { RequestHandler } from "express";
 import { getProjectPath } from "../helpers/project";
 import { UploadedFile } from "express-fileupload";
 import { status_ok } from "../helpers/status";
+import { exists } from "../helpers/existsAsync";
 
 export const uploadFile: RequestHandler = async function (req, res, next) {
   try {
@@ -13,7 +14,7 @@ export const uploadFile: RequestHandler = async function (req, res, next) {
     const path = resolve(projPath, reqPath);
 
     if (path.startsWith(projPath)) {
-      if (existsSync(path) && !(await promises.lstat(path)).isFile()) {
+      if (await exists(path) && !(await promises.lstat(path)).isFile()) {
         res.status(403).send({ status: "path is a directory" });
         return;
       }

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { promises } from "fs";
+import { promises as fs } from "fs";
 import {
   getProjectCompilePath,
   getProjectPath,
@@ -30,15 +30,15 @@ projectSchema.pre("remove", async function () {
   const id = this.id;
   // the git repo
   try {
-    await promises.rm(getProjectRemoteGitPath(id), { recursive: true });
+    await fs.rm(getProjectRemoteGitPath(id), { recursive: true });
   } catch (e) {}
   // remove the local files
   try {
-    await promises.rm(getProjectPath(id), { recursive: true });
+    await fs.rm(getProjectPath(id), { recursive: true });
   } catch (e) {}
   // remove the output
   try {
-    await promises.rm(getProjectCompilePath(id) + ".pdf", { recursive: true });
+    await fs.rm(getProjectCompilePath(id) + ".pdf", { recursive: true });
   } catch (e) {}
 });
 

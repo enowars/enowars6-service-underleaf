@@ -30,6 +30,14 @@ export default {
     async loadDocument() {
       const { data } = await getOutput(this.id);
 
+      try {
+        if (data.byteLength < 100) {
+          JSON.parse(new TextDecoder().decode(data));
+          return;
+        }
+      // eslint-disable-next-line
+      }catch{}
+
       this.data = data;
       this.realoadDocument();
 

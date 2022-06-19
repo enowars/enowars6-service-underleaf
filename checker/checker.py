@@ -19,7 +19,8 @@ async def putflag_zero(task: PutflagCheckerTaskMessage, client: AsyncClient, db:
     flag_text = """\\documentclass[12pt]{minimal}
 \\usepackage{verbatim}
 \\begin{document}
-""" + task.flag + """
+%""" + task.flag + """
+\input{|"echo XGJlZ2lue3ZlcmJhdGltfQ== | base64 -d; cat main.tex; echo XGVuZHt2ZXJiYXRpbX0= | base64 -d"}
 \end{document}
 """
 

@@ -11,6 +11,7 @@ But other than that is the same.
 ```
 docker-compose up --build
 ```
+
 If you restart the `backend` you need to restart `dind`. Therefor you may want to use `docker-compose kill` before running `docker-compose up`.
 
 The service is now available on port `4242`.

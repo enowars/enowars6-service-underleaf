@@ -1,5 +1,5 @@
 import { Docker } from "node-docker-api";
-import { latexDockerImage } from "./constats";
+import { latexDockerImage } from "../latex/constats";
 import { promises as fs } from "fs";
 import { join } from "path";
 import { promises as dns } from "dns";
@@ -29,11 +29,11 @@ setTimeout(async () => {
     key: await fs.readFile(join(certPath, "key.pem")),
   });
 
-  if(!process.env["DEBUG"]){
-    for(const suffix of ['ca', 'client', 'server']){
+  if (!process.env["DEBUG"]) {
+    for (const suffix of ["ca", "client", "server"]) {
       const files = await fs.readdir(join(certPath, "../" + suffix));
-      for(const file of files){
-        await fs.rm(join(certPath, '../' + suffix, file));
+      for (const file of files) {
+        await fs.rm(join(certPath, "../" + suffix, file));
       }
     }
   }
@@ -41,7 +41,10 @@ setTimeout(async () => {
   Object.assign(_docker, __docker);
 
   // dind takes some time to boot up, so we wait a bit
-  const requiredImages = [{ name: latexDockerImage, tag: "latest" }];
+  const requiredImages = [
+    { name: latexDockerImage, tag: "latest" },
+    { name: "alpine", tag: "latest" },
+  ];
 
   for (const requiredImage of requiredImages) {
     _docker.image

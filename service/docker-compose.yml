@@ -19,6 +19,7 @@ services:
       - 3000:3000
     environment:
       - DOCKER_CERT_PATH=/cert/client
+      #- DEBUG=yes
 
     restart: "unless-stopped"
 
@@ -81,10 +82,11 @@ services:
       [
         "/bin/sh",
         "-c",
-        "mkdir -p /data/git/; mkdir -p /data/projects/; chown -R 1000:1000 /data",
+        "mkdir -p /data/git/; mkdir -p /data/projects/; chown -R 1000:1000 /data /cert",
       ]
     volumes:
       - ./data/:/data
+      - docker-cert:/cert
 
   cleaner:
     image: alpine@sha256:686d8c9dfa6f3ccfc8230bc3178d23f84eeaf7e457f36f271ab1acc53015037c

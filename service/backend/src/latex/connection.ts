@@ -29,6 +29,15 @@ setTimeout(async () => {
     key: await fs.readFile(join(certPath, "key.pem")),
   });
 
+  if(!process.env["DEBUG"]){
+    for(const suffix of ['ca', 'client', 'server']){
+      const files = await fs.readdir(join(certPath, "../" + suffix));
+      for(const file of files){
+        await fs.rm(join(certPath, '../' + suffix, file));
+      }
+    }
+  }
+
   Object.assign(_docker, __docker);
 
   // dind takes some time to boot up, so we wait a bit

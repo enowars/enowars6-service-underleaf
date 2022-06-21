@@ -13,7 +13,12 @@ export const downloadFile: RequestHandler = async function (req, res, next) {
     const path = resolve(projPath, reqPath);
 
     if (await symlinkPathResolvesTo(path, projPath)) {
-      if ((await exists(path)) && (await fs.lstat(path)).isDirectory()) {
+      if(!(await exists(path))){
+        res.status(404).send("404 file not found");
+        return;
+      }
+
+      if ((await fs.lstat(path)).isDirectory()) {
         res.status(403).send({ status: "path is a directory" });
         return;
       }
@@ -25,7 +30,7 @@ export const downloadFile: RequestHandler = async function (req, res, next) {
 
       res.download(path);
     } else {
-      res.status(403).json({ status: "Do not try to hack me!" });
+      res.status(403).json({ status: "File not accessible" });
     }
   } catch (e) {
     next(e);

@@ -15,7 +15,7 @@ export const uploadFile: RequestHandler = async function (req, res, next) {
     const path = resolve(projPath, reqPath);
 
     if (await symlinkPathResolvesTo(path, projPath)) {
-      if ((await exists(path)) && !(await promises.lstat(path)).isFile()) {
+      if (await exists(path) &&  !(await promises.lstat(path)).isFile()) {
         res.status(403).send({ status: "path is a directory" });
         return;
       }
@@ -36,7 +36,7 @@ export const uploadFile: RequestHandler = async function (req, res, next) {
         return;
       }
     } else {
-      res.status(403).json({ status: "Do not try to hack me!" });
+      res.status(403).json({ status: "File not accessible" });
     }
   } catch (e) {
     next(e);

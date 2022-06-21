@@ -1,9 +1,7 @@
 <template>
   <div class="container p-4">
     <b-button v-b-modal.new-project-modal>New Project</b-button>
-    <b-button variant="danger" style="float: right" @click="deleteUser"
-      >Delete account</b-button
-    >
+
     <b-modal
       centered
       id="new-project-modal"
@@ -33,13 +31,6 @@
           style="cursor: pointer"
         >
           {{ row.item.name }}
-          <b-button
-            variant="danger"
-            size="sm"
-            style="float: right"
-            @click.stop="deleteProject.call(this, row)"
-            >Delete</b-button
-          >
         </div>
       </template>
     </b-table>
@@ -47,12 +38,7 @@
 </template>
 
 <script>
-import {
-  listProjects,
-  createProject,
-  deleteProject,
-  deleteUser,
-} from "../services/api/client.js";
+import { listProjects, createProject } from "../services/api/client.js";
 
 export default {
   name: "ProjectList",
@@ -72,21 +58,6 @@ export default {
     async createNewProject() {
       await createProject(this.newProjectName);
       this.loadProjects();
-    },
-    async deleteProject(row) {
-      await deleteProject(row.item.id);
-      this.loadProjects();
-    },
-    async deleteUser() {
-      // eslint-disable-next-line
-      debugger;
-      try {
-        await deleteUser();
-      } catch (e) {
-        console.error(e);
-      }
-      localStorage.removeItem("token");
-      location.reload();
     },
   },
 };

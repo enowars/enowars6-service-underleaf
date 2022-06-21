@@ -1,8 +1,8 @@
 import { Docker } from "node-docker-api";
-import { latexDockerImage } from "./constats";
-import { readFileSync } from "fs";
+import { latexDockerImage } from "../latex/constats";
+import { promises as fs } from "fs";
 import { join } from "path";
-import { promises } from "dns";
+import { promises as dns } from "dns";
 
 if (typeof process.env.DOCKER_CERT_PATH === "undefined") {
   throw Error("DOCKER_CERT_PATH is not defined");
@@ -22,17 +22,20 @@ const promisifyStream = (stream: any) =>
 setTimeout(async () => {
   const __docker = new Docker({
     protocol: "https",
-    host: (await promises.lookup("dind")).address, // yes this is needed, the ca valid for the host 'dind'
+    host: (await dns.lookup("dind")).address, // yes this is needed, the ca valid for the host 'dind'
     port: 2376,
-    ca: readFileSync(join(certPath, "ca.pem")),
-    cert: readFileSync(join(certPath, "cert.pem")),
-    key: readFileSync(join(certPath, "key.pem")),
+    ca: await fs.readFile(join(certPath, "ca.pem")),
+    cert: await fs.readFile(join(certPath, "cert.pem")),
+    key: await fs.readFile(join(certPath, "key.pem")),
   });
 
   Object.assign(_docker, __docker);
 
   // dind takes some time to boot up, so we wait a bit
-  const requiredImages = [{ name: latexDockerImage, tag: "latest" }];
+  const requiredImages = [
+    { name: latexDockerImage, tag: "latest" },
+    { name: "alpine", tag: "latest" },
+  ];
 
   for (const requiredImage of requiredImages) {
     _docker.image

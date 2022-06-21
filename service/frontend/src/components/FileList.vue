@@ -16,7 +16,7 @@
       @click="$emit('selected', this.selectedFile)"
       v-b-tooltip.hover
       title="Ctrl+S"
-      >Compile</b-button
+      >Compile / Save</b-button
     >
     <b-modal
       centered

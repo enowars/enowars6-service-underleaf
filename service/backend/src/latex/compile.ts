@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { status_ok } from "../helpers/status";
-import { docker } from "./connection";
-import { createReadStream, createWriteStream, promises } from "fs";
+import { docker } from "../helpers/dockerConnection";
+import { createReadStream, createWriteStream, promises as fs } from "fs";
 import { resolve, parse } from "path";
 
 import tar from "tar";
@@ -69,7 +69,7 @@ export const compileProject: RequestHandler = async (req, res, next) => {
     const tarProm: Promise<void> = tar.create(
       {
         gz: false,
-        cwd: resolve(getProjectPath(req.params.id)),
+        cwd: getProjectPath(req.params.id),
         file: tarPath,
         prefix: "data/",
       } as any,
@@ -111,7 +111,7 @@ export const compileProject: RequestHandler = async (req, res, next) => {
 
     if (finish !== "timeout") {
       const outputPath = getProjectCompilePath(req.params.id) + ".pdf";
-      await promises.mkdir(resolve(outputPath, ".."), { recursive: true });
+      await fs.mkdir(resolve(outputPath, ".."), { recursive: true });
 
       try {
         const stream = (await container.fs.get({

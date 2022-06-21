@@ -31,7 +31,9 @@ def response_ok(response: Response, message: str, logger: LoggerAdapter) -> dict
         raise MumbleException(message)
 
     assert_in("status", json, message + " status not found")
-
+    
+    if "output" in json:
+        logger.info("Request returned output: " + json["output"])
     assert_equals(json["status"], "ok", message + " status was not ok: (was: " + json["status"] + ")")
 
     assert_equals(response.status_code, 200, message + " status code was not 200")
@@ -76,15 +78,6 @@ async def login_user(client: AsyncClient, username: str, password: str, logger: 
 
     client.headers["Authorization"] = f"Bearer {json['token']}"
     logger.info(f"logged in user {username}:{password} got token {json['token']}")
-
-async def delete_user(client: AsyncClient, logger: LoggerAdapter) -> None:
-    try:
-        response = await client.get("/api/auth/delete", follow_redirects=True)
-    except Exception as e:
-        handle_RequestError(e, "request error while deleting user")
-
-    response_ok(response, "deleting user failed", logger)
-    logger.info("deleted user")
 
 async def create_project(client: AsyncClient, logger: LoggerAdapter) -> Tuple[str, str]:
     project_name = secrets.token_hex(8)

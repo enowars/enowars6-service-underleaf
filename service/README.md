@@ -12,6 +12,8 @@ But other than that is the same.
 docker-compose up --build
 ```
 
+If you restart the `backend` you need to restart `dind`. Therefor you may want to use `docker-compose kill` before running `docker-compose up`.
+
 The service is now available on port `4242`.
 
 ### Devolopment
@@ -20,7 +22,7 @@ The service is now available on port `4242`.
 
 - Change the `Dockerfile` used by the `backend` to use `Dev.Dockerfile`
 - add the volume `./backend:/app` to the `backend`
-- set the backend enviroment variable `JWT_SECRET` to some value
+- set the backend enviroment variable `DEBUG` to some value
 
 2. Configure code reloading for the frontend
 

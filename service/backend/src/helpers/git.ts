@@ -1,6 +1,6 @@
 import shellescape from "shell-escape";
 import { exec } from "child_process";
-import { promises } from "fs";
+import { promises as fs } from "fs";
 import { resolve } from "path";
 
 class AsyncExecError extends Error {
@@ -64,7 +64,7 @@ export async function gitSetupProject(
   await gitAddRemote(localPath, gitUrl);
 
   // copy default document over
-  await promises.writeFile(
+  await fs.writeFile(
     resolve(localPath, "main.tex"),
     `\\documentclass[12pt]{minimal}
 \\usepackage[utf8]{inputenc}

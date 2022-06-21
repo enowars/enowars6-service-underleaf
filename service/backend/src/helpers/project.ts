@@ -1,8 +1,8 @@
 import { RequestHandler } from "express";
-import { existsSync } from "fs";
+import { exists } from "./existsAsync";
 
 export function projectIdIsSafe(id: string): boolean {
-  return /^[0-9a-fA-F]+$/.test(id);
+  return /^[0-9a-fA-F]*$/.test(id);
 }
 
 function idToSegmentedPath(id: string): string {
@@ -17,7 +17,7 @@ function throwIfProjectIdIsNotSafe(id: string): void {
 
 export function getProjectPath(id: string): string {
   throwIfProjectIdIsNotSafe(id);
-  return "./data/projects/" + idToSegmentedPath(id);
+  return "/app/data/projects/" + idToSegmentedPath(id);
 }
 
 export function getProjectRemoteGitPath(id: string): string {
@@ -30,14 +30,14 @@ export function getRemoteGitUrl(id: string): string {
   return "http://nginx-git/" + id; //idToSegmentedPath(id);
 }
 
-export function projectIsSafe(id: string): boolean {
-  return projectIdIsSafe(id) && existsSync(getProjectPath(id));
+export async function projectIsSafe(id: string): Promise<boolean> {
+  return projectIdIsSafe(id) && exists(getProjectPath(id));
 }
 
-export const reqProjectIdIsSafe: RequestHandler = (req, res, next) => {
+export const reqProjectIdIsSafe: RequestHandler = async (req, res, next) => {
   const id = req.params.id || req.body.id;
 
-  if (typeof id === "string" && projectIsSafe(id)) {
+  if (typeof id === "string" && (await projectIsSafe(id))) {
     next();
     return;
   }

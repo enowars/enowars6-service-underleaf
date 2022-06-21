@@ -1,4 +1,4 @@
-import { promises } from "fs";
+import { promises as fs } from "fs";
 import { resolve } from "path";
 
 import { RequestHandler } from "express";
@@ -12,10 +12,10 @@ async function getFiles(dir: string) {
   while (stack.length) {
     const currentPath = stack.pop() as string;
 
-    const files = await promises.readdir(currentPath, { withFileTypes: true });
+    const files = await fs.readdir(currentPath, { withFileTypes: true });
 
     for (const file of files) {
-      const name = resolve(currentPath, file.name).substring(dir.length + 3);
+      const name = resolve(currentPath, file.name).substring(dir.length);
       if (name === "/.git") {
         continue;
       }

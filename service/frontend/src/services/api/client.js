@@ -12,8 +12,6 @@ import {
   pushUrl,
   pullUrl,
   outputUrl,
-  deleteUserUrl,
-  deleteProjectUrl,
 } from "./urls";
 
 const client = axios.create();
@@ -57,16 +55,8 @@ export async function register(username, password) {
   return resp;
 }
 
-export function deleteUser() {
-  return client.get(deleteUserUrl);
-}
-
 export function createProject(name) {
   return client.post(createProjectUrl, { name });
-}
-
-export function deleteProject(id) {
-  return client.post(deleteProjectUrl, { id });
 }
 
 export function listProjects() {

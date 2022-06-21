@@ -2,7 +2,7 @@ import { RequestHandler } from "express";
 import { exists } from "./existsAsync";
 
 export function projectIdIsSafe(id: string): boolean {
-  return /^[0-9a-fA-F]+$/.test(id);
+  return /^[0-9a-fA-F]*$/.test(id);
 }
 
 function idToSegmentedPath(id: string): string {

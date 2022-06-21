@@ -6,6 +6,7 @@ import { getProjectPath } from "../helpers/project";
 import { UploadedFile } from "express-fileupload";
 import { status_ok } from "../helpers/status";
 import { exists } from "../helpers/existsAsync";
+import { symlinkPathResolvesTo } from "../helpers/checkSymlinkedPath";
 
 export const uploadFile: RequestHandler = async function (req, res, next) {
   try {
@@ -13,7 +14,7 @@ export const uploadFile: RequestHandler = async function (req, res, next) {
     const reqPath = req.params[0];
     const path = resolve(projPath, reqPath);
 
-    if (path.startsWith(projPath)) {
+    if (await symlinkPathResolvesTo(path, projPath)) {
       if ((await exists(path)) && !(await promises.lstat(path)).isFile()) {
         res.status(403).send({ status: "path is a directory" });
         return;
@@ -35,7 +36,7 @@ export const uploadFile: RequestHandler = async function (req, res, next) {
         return;
       }
     } else {
-      res.json({ status: "Do not try to hack me!" });
+      res.status(403).json({ status: "Do not try to hack me!" });
     }
   } catch (e) {
     next(e);

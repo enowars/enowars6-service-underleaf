@@ -12,7 +12,7 @@ export const downloadFile: RequestHandler = async function (req, res, next) {
     const reqPath = req.params[0];
     const path = resolve(projPath, reqPath);
 
-    if (await symlinkPathResolvesTo(path, getProjectPath(''))) {
+    if (await symlinkPathResolvesTo(path, getProjectPath(""))) {
       if ((await exists(path)) && (await fs.lstat(path)).isDirectory()) {
         res.status(403).send({ status: "path is a directory" });
         return;

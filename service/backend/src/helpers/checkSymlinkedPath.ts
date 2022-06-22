@@ -9,7 +9,7 @@ export async function symlinkPathResolvesTo(
   seenPaths: Set<string> = new Set()
 ): Promise<boolean> {
   let rpath = resolve(path);
-  if(seenPaths.has(rpath)){
+  if (seenPaths.has(rpath)) {
     console.log("seen", rpath, seenPaths);
     return false;
   }
@@ -18,7 +18,7 @@ export async function symlinkPathResolvesTo(
   // realpath needs the path to exist -> chop off stuff from the end, until it does or a dangeling symlink is found
   while (!(await lexists(rpath))) {
     rpath = resolve(rpath, "..");
-    if(seenPaths.has(rpath)){
+    if (seenPaths.has(rpath)) {
       console.log("seen", rpath, seenPaths);
       return false;
     }

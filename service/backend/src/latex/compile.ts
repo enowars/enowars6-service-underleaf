@@ -60,7 +60,8 @@ export const compileProject: RequestHandler = async (req, res, next) => {
         "data/",
         "/data/" + parse(req.body.file).name + ".pdf",
         outputPath,
-        1500
+        1500,
+        false
       );
     } catch (e) {
       // Bubble errors

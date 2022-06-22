@@ -1,0 +1,7 @@
+services:
+  latex:
+    image: hllm/texlive-thin
+    build: texlive-thin
+  git:
+    image: hllm/git
+    build: git

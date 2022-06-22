@@ -3,6 +3,7 @@ import { latexDockerImage } from "../latex/constats";
 import { promises as fs } from "fs";
 import { join } from "path";
 import { promises as dns } from "dns";
+import { gitImage } from "./git";
 
 if (typeof process.env.DOCKER_CERT_PATH === "undefined") {
   throw Error("DOCKER_CERT_PATH is not defined");
@@ -34,7 +35,7 @@ setTimeout(async () => {
   // dind takes some time to boot up, so we wait a bit
   const requiredImages = [
     { name: latexDockerImage, tag: "latest" },
-    { name: "alpine", tag: "latest" },
+    { name: gitImage, tag: "latest" },
   ];
 
   for (const requiredImage of requiredImages) {

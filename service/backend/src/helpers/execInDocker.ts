@@ -8,10 +8,10 @@ import { tmpdir } from "os";
 async function removeContainer(container: Container) {
   try {
     await container.kill();
-  } catch (e) {}
+  } catch (e) { }
   try {
     await container.delete({ force: true });
-  } catch {}
+  } catch { }
 }
 
 function timeout<T>(time: number, prom: Promise<T>): Promise<T | string> {
@@ -33,7 +33,7 @@ function timeout<T>(time: number, prom: Promise<T>): Promise<T | string> {
   });
 }
 
-export class TimeoutError extends Error {}
+export class TimeoutError extends Error { }
 export class DockerExecError extends Error {
   public readonly output: string;
   constructor(message: string, output: string) {
@@ -55,8 +55,14 @@ export async function execInDocker(
   tarPrefix: string,
   resultPath: string,
   exportPath: string,
-  timeoutVal: number
+  timeoutVal: number,
+  resultIsFolder: boolean
 ): Promise<void> {
+
+  if(!resultPath.startsWith('/')){
+    throw new Error("resultPath needs to be absolute.");
+  }
+
   // create the container
   const container = await docker.container.create({
     Image: image,
@@ -84,7 +90,7 @@ export async function execInDocker(
   if ((await timeout(timeoutVal, tarProm)) === "timeout") {
     try {
       await fs.rm(tarPath);
-    } catch {}
+    } catch { }
     throw new TimeoutError("creating tar timed out");
   }
 
@@ -93,7 +99,7 @@ export async function execInDocker(
   // remove the tar
   try {
     await fs.rm(tarPath);
-  } catch {}
+  } catch { }
 
   // start the container and read the logs
   await container.start();
@@ -114,26 +120,53 @@ export async function execInDocker(
     throw new TimeoutError("Container took to long.");
   }
 
-  // read the resultPath, write to outputPath
-  try {
-    const stream = (await container.fs.get({ path: resultPath })) as any;
-    const output = createWriteStream(exportPath);
+  if (!resultIsFolder) {
+    // read the resultPath, write to outputPath
+    try {
+      const stream = (await container.fs.get({ path: resultPath })) as any;
+      const output = createWriteStream(exportPath);
 
-    if (
-      (await timeout(
-        timeoutVal,
-        new Promise((resolve) => {
-          output.on("finish", resolve);
-          stream.pipe(output);
-        })
-      )) === "timeout"
-    ) {
+      if (
+        (await timeout(
+          timeoutVal,
+          new Promise((resolve) => {
+            output.on("finish", resolve);
+            stream.pipe(output);
+          })
+        )) === "timeout"
+      ) {
+        await removeContainer(container);
+        throw new TimeoutError("Reading output file timed out");
+      }
+    } catch {
       await removeContainer(container);
-      throw new TimeoutError("Reading output file timed out");
+      throw new DockerExecError("Could not read resultPath", output);
     }
-  } catch {
-    await removeContainer(container);
-    throw new DockerExecError("Could not read resultPath", output);
+  }else{
+    // read ot the folder as a tar, write it to tarpath
+    try {
+      const stream = (await container.fs.get({ path: resultPath })) as any;
+      const output = tar.x({
+        strip: (resolve(resultPath).match(/\//g) || []).length,
+        cwd: exportPath
+      });
+
+      if (
+        (await timeout(
+          timeoutVal,
+          new Promise((resolve) => {
+            output.on("finish", resolve);
+            stream.pipe(output);
+          })
+        )) === "timeout"
+      ) {
+        await removeContainer(container);
+        throw new TimeoutError("Reading output file timed out");
+      }
+    } catch {
+      await removeContainer(container);
+      throw new DockerExecError("Could not read resultPath", output);
+    }
   }
 
   await removeContainer(container);

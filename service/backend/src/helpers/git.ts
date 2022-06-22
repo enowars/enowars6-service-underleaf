@@ -71,7 +71,7 @@ export async function gitSetupProject(
     
 \\begin{document}
   \\begin{center}
-    \\LaTeX is \\textit{sus}!
+    \\LaTeX{} is \\textit{sus}!
   \\end{center}
 \\end{document}`
   );

@@ -18,13 +18,13 @@ jobs:
       - name: Run service
         run: |
           cd service
-          docker-compose build
+          docker-compose build --no-cache
           docker-compose up -d
 
       - name: Run checker
         run: |
           cd checker
-          docker-compose build
+          docker-compose build --no-cache
           docker-compose up -d
 
       - name: Wait for dind

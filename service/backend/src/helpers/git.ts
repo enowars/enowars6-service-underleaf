@@ -4,7 +4,7 @@ import { promises as fs } from "fs";
 import { resolve } from "path";
 import { execInDocker } from "./execInDocker";
 
-export const gitImage = "hllm/git"
+export const gitImage = "hllm/git";
 const timeout = 1500;
 
 class AsyncExecError extends Error {
@@ -24,14 +24,14 @@ function escapeString(input: string): string {
   return shellescape([input]);
 }
 
-async function runGitCommandInContainer(path: string, command: Array<string>){
+async function runGitCommandInContainer(path: string, command: Array<string>) {
   return await execInDocker(
     gitImage,
     command,
     "/data",
     path,
-    'data/',
-    '/data',
+    "data/",
+    "/data",
     path,
     timeout,
     true
@@ -44,9 +44,9 @@ export async function gitSetupProject(
   gitUrl: string
 ) {
   // copy default document over
-    await fs.writeFile(
-      resolve(localPath, "main.tex"),
-      `\\documentclass[12pt]{minimal}
+  await fs.writeFile(
+    resolve(localPath, "main.tex"),
+    `\\documentclass[12pt]{minimal}
   \\usepackage[utf8]{inputenc}
       
   \\begin{document}
@@ -54,13 +54,16 @@ export async function gitSetupProject(
       \\LaTeX is \\textit{sus}!
     \\end{center}
   \\end{document}`
-    );
+  );
 
   // configure 'remote' git
-  await runGitCommandInContainer(remotePath, ["git", "init", "--bare"])
+  await runGitCommandInContainer(remotePath, ["git", "init", "--bare"]);
 
   // configure 'local' git
-  await runGitCommandInContainer(localPath, ["sh", "-c", `
+  await runGitCommandInContainer(localPath, [
+    "sh",
+    "-c",
+    `
   git init . &&
   git config user.name underleaf &&
   git config user.email underleaf@example.com &&
@@ -68,17 +71,32 @@ export async function gitSetupProject(
   git add . &&
   git commit -m "Initial commit" &&
   git push -f origin master
-  `]);
+  `,
+  ]);
 }
 
 export async function gitCommit(path: string, message: string) {
-  return await runGitCommandInContainer(path, ["sh", "-c", `git add . && git commit -m ${escapeString(message)}`])
+  return await runGitCommandInContainer(path, [
+    "sh",
+    "-c",
+    `git add . && git commit -m ${escapeString(message)}`,
+  ]);
 }
 
 export async function gitPush(path: string) {
-  return await runGitCommandInContainer(path, ["git", "push", "-f", "origin", "master"])
+  return await runGitCommandInContainer(path, [
+    "git",
+    "push",
+    "-f",
+    "origin",
+    "master",
+  ]);
 }
 
 export async function gitPull(path: string) {
-  return await runGitCommandInContainer(path, ["sh", "-c", "git fetch origin && git reset --hard origin/master"])
+  return await runGitCommandInContainer(path, [
+    "sh",
+    "-c",
+    "git fetch origin && git reset --hard origin/master",
+  ]);
 }

@@ -144,6 +144,10 @@ async def putnoise_file_content(task: PutnoiseCheckerTaskMessage, client: AsyncC
     noise = secrets.token_hex(32)
 
     await upload_file(client, id, noise_name, noise, logger)
+    
+    await commit(client, id, noise, logger)
+    await push(client, id, logger)
+
     await db.set("noise", (noise_name, noise))
     logger.info("putnoise_file_content: success")
 
@@ -160,6 +164,16 @@ async def getnoise_file_content(task: GetnoiseCheckerTaskMessage, client: AsyncC
     await login_user(client, username, password, logger)
     if await download_file(client, id, noise_name, logger) != noise:
         raise MumbleException()
+
+    path = await clone_project(username, password, id, task.address, logger)
+
+    assert_equals(os.path.exists(
+        f"{path}/main.tex"), True, "file not created")
+
+    if (os.system(f"git -C {path} log | grep {noise}")) != 0:
+        raise MumbleException("noise not found")
+
+    await cleanup_clone(path)
     
     logger.info("getnoise_file_content: success")
 

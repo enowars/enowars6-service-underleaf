@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { asyncExec, gitPush } from "../helpers/git";
+import { gitPush } from "../helpers/git";
 import { getProjectPath } from "../helpers/project";
 import { status_ok } from "../helpers/status";
 

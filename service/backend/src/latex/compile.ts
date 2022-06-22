@@ -1,34 +1,23 @@
 import { RequestHandler } from "express";
 import { status_ok } from "../helpers/status";
-import { docker } from "../helpers/dockerConnection";
-import { createReadStream, createWriteStream, promises as fs } from "fs";
-import { resolve, parse } from "path";
 
-import tar from "tar";
 import { getProjectCompilePath, getProjectPath } from "../helpers/project";
 import { latexDockerImage } from "./constats";
-import { Container } from "node-docker-api/lib/container";
 
 import Nonce from "./nonceSchema";
 import crypto from "crypto";
+import {
+  DockerExecError,
+  execInDocker,
+  TimeoutError,
+} from "../helpers/execInDocker";
 
-const actionTimeout = 1500;
-
-function trimmedBufferToString(buffer: Buffer): string {
-  return buffer.toString("utf8", 8);
-}
-
-async function removeContainer(container: Container) {
-  try {
-    await container.kill();
-  } catch (e) {}
-  try {
-    await container.delete({ force: true });
-  } catch {}
-}
+import { promises as fs } from "fs";
+import { resolve, parse } from "path";
 
 export const compileProject: RequestHandler = async (req, res, next) => {
   try {
+    // check that all params are present
     if (!req.body.file) {
       res.status(400).json({ status: "no file provided" });
       return;
@@ -39,6 +28,7 @@ export const compileProject: RequestHandler = async (req, res, next) => {
       return;
     }
 
+    // check that the proof of work is valid
     const poW = req.body.proofOfWork;
     const nonce = new TextEncoder().encode(poW);
 
@@ -57,116 +47,36 @@ export const compileProject: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    const container = await docker.container.create({
-      Image: latexDockerImage,
-      WorkingDir: "/data",
-      Cmd: ["pdflatex", "-shell-escape", "/data/" + req.body.file],
-      User: "1000:1000",
-      CpuPercent: 50,
-      NetworkMode: "host",
-    });
-
-    const tarPath = "/tmp/" + req.params.id + ".tar";
-    const tarProm: Promise<void> = tar.create(
-      {
-        gz: false,
-        cwd: getProjectPath(req.params.id),
-        file: tarPath,
-        prefix: "data/",
-      } as any,
-      ["./"]
-    ) as any;
-
-    if ((await timeout(actionTimeout, tarProm)) === "timeout") {
-      res.status(400).json({ status: "tar timed out" });
-      return;
-    }
-
-    await container.fs.put(createReadStream(tarPath), { path: "/" });
-
-    await container.start();
-
-    const stream: any = await container.logs({
-      follow: true,
-      stdout: true,
-      stderr: true,
-    });
-
-    let output = "";
-    stream.on("data", (d: Buffer) => {
-      output += trimmedBufferToString(d);
-    });
-
-    let finish;
+    // compile the project
     try {
-      if (
-        (await timeout(actionTimeout * 1.5, container.wait())) === "timeout"
-      ) {
-        res.status(400).json({ status: "compile timed out" });
-        return;
-      }
-    } catch {
-      res.status(500).json({ status: "could not create continer." });
-      return;
-    }
-
-    if (finish !== "timeout") {
       const outputPath = getProjectCompilePath(req.params.id) + ".pdf";
       await fs.mkdir(resolve(outputPath, ".."), { recursive: true });
 
-      try {
-        const stream = (await container.fs.get({
-          path: "/data/" + parse(req.body.file).name + ".pdf",
-        })) as any;
-        const output = createWriteStream(outputPath);
-
-        if (
-          (await timeout(
-            actionTimeout,
-            new Promise((resolve) => {
-              output.on("finish", resolve);
-              stream.pipe(output);
-            })
-          )) === "timeout"
-        ) {
-          removeContainer(container);
-          res.status(400).json({ status: "read file timed out" });
-          return;
-        }
-      } catch {
-        removeContainer(container);
-        res.status(400).json({ status: "compile failed", output });
+      await execInDocker(
+        latexDockerImage,
+        ["pdflatex", "-shell-escape", "/data/" + req.body.file],
+        "/data",
+        getProjectPath(req.params.id),
+        "data/",
+        "/data/" + parse(req.body.file).name + ".pdf",
+        outputPath,
+        1500
+      );
+    } catch (e) {
+      // Bubble errors
+      if (e instanceof TimeoutError) {
+        res.status(400).json(e.message);
         return;
+      } else if (e instanceof DockerExecError) {
+        res.status(400).json({ status: "Compile failed", output: e.output });
+        return;
+      } else {
+        throw e;
       }
     }
 
-    removeContainer(container);
-
-    if (finish !== "timeout") {
-      res.json(status_ok);
-    } else {
-      res.status(400).send({ status: "container timed out", output });
-    }
+    res.json(status_ok);
   } catch (e) {
-    next(e);
+    await next(e);
   }
 };
-
-function timeout<T>(time: number, prom: Promise<T>): Promise<T | string> {
-  return new Promise((resolve, reject) => {
-    const timeoutId = setTimeout(() => {
-      resolve("timeout");
-    }, time);
-
-    prom.then(
-      (val: T) => {
-        clearTimeout(timeoutId);
-        resolve(val);
-      },
-      (val: T) => {
-        clearTimeout(timeoutId);
-        resolve(val);
-      }
-    );
-  });
-}

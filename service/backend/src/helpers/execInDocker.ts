@@ -68,7 +68,8 @@ export async function execInDocker(
   });
 
   // create a tar to copy over the files
-  const tarPath = fs.mkdtemp(resolve(tmpdir(), "underleaf_tar")) + ".tar";
+  const tarPath =
+    (await fs.mkdtemp(resolve(tmpdir(), "underleaf_tar"))) + ".tar";
   const tarProm: Promise<void> = tar.create(
     {
       gz: false,
@@ -89,7 +90,6 @@ export async function execInDocker(
 
   // put files into container
   await container.fs.put(createReadStream(tarPath), { path: "/" });
-
   // remove the tar
   try {
     await fs.rm(tarPath);
@@ -97,7 +97,6 @@ export async function execInDocker(
 
   // start the container and read the logs
   await container.start();
-
   const stream: any = await container.logs({
     follow: true,
     stdout: true,

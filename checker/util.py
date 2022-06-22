@@ -1,5 +1,6 @@
 import secrets
 import json
+from json import JSONDecodeError
 import os
 from typing import Optional, Tuple
 from logging import LoggerAdapter
@@ -27,7 +28,7 @@ def os_succ(code):
 def response_ok(response: Response, message: str, logger: LoggerAdapter) -> dict:
     try:
         json = response.json()
-    except json.JSONDecodeError:
+    except JSONDecodeError:
         raise MumbleException(message)
 
     assert_in("status", json, message + " status not found")

@@ -155,18 +155,19 @@ async def pull(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> N
     response_ok(response, "pulling failed", logger)
     logger.info(f"pulled project {project_id}")
 
-async def compile(client: AsyncClient, project_id: str, file:str, logger: LoggerAdapter) -> None:
+async def compile(client: AsyncClient, project_id: str, file:str, logger: LoggerAdapter, ignore_errors: bool = False) -> None:
 
     proof_of_work = os.urandom(16).hex()
     while not hashlib.sha256(bytes(proof_of_work, "utf-8")).hexdigest().endswith("0000"):
         proof_of_work = os.urandom(16).hex()
-
     try:
         response = await client.post(f"/api/latex/compile/{project_id}", data={"file": file, "proofOfWork": proof_of_work}, follow_redirects=True)
     except Exception as e:
-        handle_RequestError(e, "request error while compiling")
+        if not ignore_errors:
+            handle_RequestError(e, "request error while compiling")
 
-    response_ok(response, "compiling failed", logger)
+    if not ignore_errors:
+        response_ok(response, "compiling failed", logger)
     logger.info(f"compiled project {project_id} with proof of work {proof_of_work}")
 
 async def download_pdf(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> str:

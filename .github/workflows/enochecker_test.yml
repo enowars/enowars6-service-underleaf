@@ -21,6 +21,10 @@ jobs:
           docker-compose build --no-cache
           docker-compose up -d
 
+      - name: Obtain checker ip
+        run: |
+          echo "CHECKER_IP=$(ip -f inet addr show eth0 | awk '/inet / {print $2}' | cut -d '/' -f1)" >> $GITHUB_ENV
+
       - name: Run checker
         run: |
           cd checker

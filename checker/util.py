@@ -15,7 +15,10 @@ from httpx import ConnectTimeout, NetworkError, PoolTimeout
 service_port = 4242
 
 checker_forward_port = "4244"
-checker_ip = "192.168.178.33"
+if 'CHECKER_IP' in os.environ:
+    checker_ip = os.environ['CHECKER_IP']
+else:
+    checker_ip = "192.168.178.33"
 
 
 def handle_RequestError(err, msg):

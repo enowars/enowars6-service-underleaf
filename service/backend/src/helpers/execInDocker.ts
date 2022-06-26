@@ -116,6 +116,7 @@ export async function execInDocker(
   // wait for container to finish or timeout
   if ((await timeout(timeoutVal * 1.5, container.wait())) === "timeout") {
     await removeContainer(container);
+    console.error(output);
     throw new TimeoutError("Container took to long.");
   }
 

@@ -14,6 +14,10 @@ from httpx import ConnectTimeout, NetworkError, PoolTimeout
 
 service_port = 4242
 
+checker_forward_port = "4244"
+checker_ip = "192.168.178.33"
+
+
 def handle_RequestError(err, msg):
     if any(isinstance(err, T) for T in [ConnectTimeout, NetworkError, PoolTimeout]):
         raise OfflineException(msg + ": " + str(err) + " " + type(err).__name__ + " the service is offline")
@@ -80,8 +84,10 @@ async def login_user(client: AsyncClient, username: str, password: str, logger: 
     client.headers["Authorization"] = f"Bearer {json['token']}"
     logger.info(f"logged in user {username}:{password} got token {json['token']}")
 
-async def create_project(client: AsyncClient, logger: LoggerAdapter) -> Tuple[str, str]:
-    project_name = secrets.token_hex(8)
+async def create_project(client: AsyncClient, logger: LoggerAdapter, project_name:str = None) -> Tuple[str, str]:
+    if project_name is None:
+        project_name = secrets.token_hex(8)
+    
     try:
         response = await client.post("/api/project/create", data={"name": project_name}, follow_redirects=True)
     except Exception as e:
@@ -95,6 +101,18 @@ async def create_project(client: AsyncClient, logger: LoggerAdapter) -> Tuple[st
     logger.info(f"created project {project_name} with id {json['id']}")
 
     return project_name, json["id"]
+
+async def list_projects(client: AsyncClient, logger: LoggerAdapter) -> dict:
+    try:
+        response = await client.get("/api/project/list", follow_redirects=True)
+    except Exception as e:
+        handle_RequestError(e, "request error while listing projects")
+
+    json = response_ok(response, "listing projects failed", logger)
+    assert_in("projects", json, "listing projects failed")
+
+    logger.info(f"listed projects")
+    return json["projects"]
 
 async def upload_file(client: AsyncClient, project_id: str, filename: str, data: str, logger: LoggerAdapter) -> None:
     if not filename.startswith("/"):
@@ -127,13 +145,15 @@ async def download_file(client: AsyncClient, project_id: str, filename: str, log
     return resp
 
 
-async def commit(client: AsyncClient, project_id: str, message: str, logger: LoggerAdapter) -> None:
+async def commit(client: AsyncClient, project_id: str, message: str, logger: LoggerAdapter, ignore_erros = False) -> None:
     try:
         response = await client.post(f"/api/git/commit/{project_id}", data={"message": message}, follow_redirects=True)
     except Exception as e:
-        handle_RequestError(e, "request error while committing")
+        if not ignore_erros:
+            handle_RequestError(e, "request error while committing")
 
-    response_ok(response, "committing failed", logger)
+    if not ignore_erros:
+        response_ok(response, "committing failed", logger)
     logger.info(f"committed project {project_id} with message {message}")
 
 async def push(client: AsyncClient, project_id: str, logger: LoggerAdapter) -> None:
@@ -181,13 +201,13 @@ async def download_pdf(client: AsyncClient, project_id: str, logger: LoggerAdapt
     logger.info(f"downloaded pdf from project {project_id}")
     return response.content
 
-async def create_user_and_project(client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> Tuple[str, str, str, str]:
+async def create_user_and_project(client: AsyncClient, db: ChainDB, logger: LoggerAdapter, project_name:str = None) -> Tuple[str, str, str, str]:
     (username, password, _) = await register_user(client, logger)
 
     if db is not None:
         await db.set("credentials", (username, password))
 
-    (name, id) = await create_project(client, logger)
+    (name, id) = await create_project(client, logger, project_name)
 
     if db is not None:
         await db.set("project", (name, id))

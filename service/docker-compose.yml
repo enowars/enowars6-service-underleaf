@@ -10,9 +10,9 @@ services:
       - permission-fixer
     build:
       context: ./backend
-      dockerfile: Dev.Dockerfile # use the Dev.Dockerfile for development
+      dockerfile: Dockerfile # use the Dev.Dockerfile for development
     volumes:
-      - ./backend:/app # allows reloading of code
+      #- ./backend:/app # allows reloading of code
       - ./data/:/app/data/
       - docker-cert:/cert
     ports:
@@ -87,16 +87,16 @@ services:
       - ./data/:/data
       - docker-cert:/cert
 
-  #cleaner:
-  #  image: alpine@sha256:686d8c9dfa6f3ccfc8230bc3178d23f84eeaf7e457f36f271ab1acc53015037c
-  #  command:
-  #    [
-  #      "/bin/sh",
-  #      "-c",
-  #      "while true; do find /data/git/* /data/projects/* /data/compile/* -maxdepth 1 -type d -mmin +20 -exec rm -rv {} +; echo 'Cleaned old projects'; sleep 1200; done",
-  #    ]
-  #  volumes:
-  #    - ./data/:/data
+  cleaner:
+    image: alpine@sha256:686d8c9dfa6f3ccfc8230bc3178d23f84eeaf7e457f36f271ab1acc53015037c
+    command:
+      [
+        "/bin/sh",
+        "-c",
+        "while true; do find /data/git/* /data/projects/* /data/compile/* -maxdepth 1 -type d -mmin +20 -exec rm -rv {} +; echo 'Cleaned old projects'; sleep 1200; done",
+      ]
+    volumes:
+      - ./data/:/data
 
 volumes:
   docker-cert:

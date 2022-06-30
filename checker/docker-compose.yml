@@ -7,6 +7,7 @@ services:
     ports:
       - 4243:8000
       - 4244:4244
+      - 4245:4245
     environment:
       - MONGO_ENABLED=1
       - MONGO_HOST=underleaf-checker-db
@@ -14,6 +15,7 @@ services:
       - MONGO_USER=underleaf_checker_user
       - MONGO_PASSWORD=underleaf_checker_password
       - NOT_ENOCHECKER_TEST=${NOT_ENOCHECKER_TEST}
+      - CHECKER_IP=${CHECKER_IP}
 
   underleaf-checker-db:
     image: mongo

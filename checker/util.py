@@ -31,6 +31,12 @@ def os_succ(code):
     if code != 0:
         raise Exception("Internal error os command failed")
 
+def check_file_path_is_not_mal(path):
+    if os.path.islink(path):
+        raise MumbleException("The service is trying to be a l337 h4ck3r.")
+    if os.path.getsize(path) > 1024 * 2:
+        raise MumbleException("The service is trying to be a l337 h4ck3r.")
+
 def response_ok(response: Response, message: str, logger: LoggerAdapter) -> dict:
     try:
         json = response.json()

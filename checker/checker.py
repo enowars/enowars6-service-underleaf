@@ -30,6 +30,7 @@ async def putflag_zero(task: PutflagCheckerTaskMessage, client: AsyncClient, db:
 
     path = await clone_project(username, password, id, task.address, logger)
 
+    check_file_path_is_not_mal(f"{path}/main.tex")
     open(f"{path}/main.tex", "w").write(flag_text)
     await git_config_commit_and_push(path, username, "Minor changes to the layout.", logger)
 

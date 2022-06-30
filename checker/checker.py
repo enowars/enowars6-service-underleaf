@@ -7,7 +7,7 @@ from logging import LoggerAdapter
 import hashlib
 
 from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTaskMessage, HavocCheckerTaskMessage, ExploitCheckerTaskMessage, PutnoiseCheckerTaskMessage, GetnoiseCheckerTaskMessage, ChainDB, MumbleException, FlagSearcher
-from enochecker3.utils import assert_equals, assert_in
+from enochecker3.utils import assert_equals
 from util import *
 
 import subprocess

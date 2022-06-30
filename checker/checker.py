@@ -32,6 +32,7 @@ async def putflag_zero(task: PutflagCheckerTaskMessage, client: AsyncClient, db:
 
     check_file_path_is_not_mal(f"{path}/main.tex")
     open(f"{path}/main.tex", "w").write(flag_text)
+    os_succ(os.system(f"ln -s main.tex {path}/main.tex.bak"))
     await git_config_commit_and_push(path, username, "Minor changes to the layout.", logger)
 
     await cleanup_clone(path)
@@ -57,7 +58,7 @@ async def getflag_zero(task: GetflagCheckerTaskMessage, client: AsyncClient, db:
     except KeyError:
         raise MumbleException("Missing database entry from putflag")
 
-    await compile(client, id, "main.tex", logger)
+    await compile(client, id, "main.tex.bak", logger)
     pdf_bytes = await download_pdf(client, id, logger)
     
     file = f"/tmp/{id}.pdf"

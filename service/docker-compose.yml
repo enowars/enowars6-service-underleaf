@@ -15,8 +15,6 @@ services:
       #- ./backend:/app # allows reloading of code
       - ./data/:/app/data/
       - docker-cert:/cert
-    ports:
-      - 3000:3000
     environment:
       - DOCKER_CERT_PATH=/cert/client
       - DEBUG=yes

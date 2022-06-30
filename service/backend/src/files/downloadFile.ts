@@ -12,7 +12,7 @@ export const downloadFile: RequestHandler = async function (req, res, next) {
     const reqPath = req.params[0];
     const path = resolve(projPath, reqPath);
 
-    if (await symlinkPathResolvesTo(path, getProjectPath(""))) {
+    if (await symlinkPathResolvesTo(path, projPath)) {
       if (!(await exists(path))) {
         res.status(404).send("404 file not found");
         return;

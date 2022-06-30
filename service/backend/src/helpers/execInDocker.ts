@@ -56,12 +56,14 @@ export async function execInDocker(
   resultPath: string,
   exportPath: string,
   timeoutVal: number,
-  resultIsFolder: boolean
+  resultIsFolder: boolean,
+  runInHostNetwork: boolean = false
 ): Promise<void> {
   if (!resultPath.startsWith("/")) {
     throw new Error("resultPath needs to be absolute.");
   }
 
+  const nMode = runInHostNetwork ? { NetworkMode: "host" } : {};
   // create the container
   const container = await docker.container.create({
     Image: image,
@@ -69,7 +71,7 @@ export async function execInDocker(
     Cmd: command,
     User: "1000:1000",
     CpuPercent: 50,
-    NetworkMode: "host",
+    ...nMode,
   });
 
   // create a tar to copy over the files

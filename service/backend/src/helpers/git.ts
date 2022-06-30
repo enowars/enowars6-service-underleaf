@@ -34,6 +34,7 @@ async function runGitCommandInContainer(path: string, command: Array<string>) {
     "/data",
     path,
     timeout,
+    true,
     true
   );
 }

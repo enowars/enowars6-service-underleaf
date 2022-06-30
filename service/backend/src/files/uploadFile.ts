@@ -1,5 +1,5 @@
 import { resolve } from "path";
-import { promises } from "fs";
+import { promises as fs } from "fs";
 
 import { RequestHandler } from "express";
 import { getProjectPath } from "../helpers/project";
@@ -15,7 +15,7 @@ export const uploadFile: RequestHandler = async function (req, res, next) {
     const path = resolve(projPath, reqPath);
 
     if (await symlinkPathResolvesTo(path, projPath)) {
-      if ((await exists(path)) && !(await promises.stat(path)).isFile()) {
+      if ((await exists(path)) && !(await fs.stat(path)).isFile()) {
         res.status(403).send({ status: "path is a directory" });
         return;
       }
@@ -28,7 +28,7 @@ export const uploadFile: RequestHandler = async function (req, res, next) {
       for (const key in req.files) {
         const file = req.files[key] as UploadedFile;
 
-        await promises.mkdir(resolve(path, ".."), { recursive: true });
+        await fs.mkdir(resolve(path, ".."), { recursive: true });
 
         file.mv(path);
 

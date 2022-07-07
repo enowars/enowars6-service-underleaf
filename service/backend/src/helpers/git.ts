@@ -23,12 +23,12 @@ function escapeString(input: string): string {
 }
 
 export function asyncExec(command: string) {
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     exec(command, (error, stdout, stderr) => {
       if (error) {
         reject(new AsyncExecError(error, stdout, stderr));
       } else {
-        resolve({});
+        resolve();
       }
     });
   });
@@ -59,29 +59,36 @@ export async function gitSetupProject(
   remotePath: string,
   gitUrl: string
 ) {
+  // configure 'remote' git
+  const remoteProm = gitInitBare(remotePath);
+
+  const proms = [] as Array<Promise<void>>;
+  // copy default document over
+  proms.push(
+    fs.writeFile(
+      resolve(localPath, "main.tex"),
+      `\\documentclass[12pt]{minimal}
+  \\usepackage[utf8]{inputenc}
+      
+  \\begin{document}
+    \\begin{center}
+      \\LaTeX{} is \\textit{sus}!
+    \\end{center}
+  \\end{document}`
+    )
+  );
+
   // configure 'local' git
   await gitInit(localPath);
-  await gitConfigName(localPath);
-  await gitConfigEmail(localPath);
-  await gitAddRemote(localPath, gitUrl);
+  proms.push(gitConfigName(localPath));
+  proms.push(gitConfigEmail(localPath));
+  proms.push(gitAddRemote(localPath, gitUrl));
 
-  // copy default document over
-  await fs.writeFile(
-    resolve(localPath, "main.tex"),
-    `\\documentclass[12pt]{minimal}
-\\usepackage[utf8]{inputenc}
-    
-\\begin{document}
-  \\begin{center}
-    \\LaTeX{} is \\textit{sus}!
-  \\end{center}
-\\end{document}`
-  );
+  await Promise.all(proms);
 
   await gitCommit(localPath, "Initial commit");
 
-  // configure 'remote' git
-  await gitInitBare(remotePath);
+  await remoteProm;
 
   await gitPush(localPath);
 }

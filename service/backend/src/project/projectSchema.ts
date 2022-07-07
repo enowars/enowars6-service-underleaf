@@ -42,6 +42,9 @@ projectSchema.pre("remove", async function () {
   } catch (e) {}
 });
 
+projectSchema.index({ id: 1 }, { unique: true });
+projectSchema.index({ owner: 1 }, { unique: false });
+
 const Project = mongoose.model("Project", projectSchema);
 
 export default Project;

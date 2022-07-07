@@ -20,7 +20,10 @@ export const uploadFile: RequestHandler = async function (req, res, next) {
         return;
       }
 
-      if (path.startsWith(resolve(projPath, ".git"))) {
+      if (
+        (await exists(path)) &&
+        (await fs.realpath(path)).startsWith(resolve(projPath, ".git"))
+      ) {
         res.status(403).send({ status: "path is in .git" });
         return;
       }

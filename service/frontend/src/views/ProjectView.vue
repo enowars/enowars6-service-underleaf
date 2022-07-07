@@ -88,10 +88,10 @@ export default {
           await crypto.subtle.digest("SHA-256", encoder.encode(proof))
         );
         if (hash.endsWith("0000")) {
-          console.log("using", { proof, hash });
+          console.log("[INFO] using", { proof, hash });
           return proof;
         } else if (hash.endsWith("00")) {
-          console.log("trying...", { proof, hash });
+          console.log("[INFO] trying...", { proof, hash });
         }
       }
     },

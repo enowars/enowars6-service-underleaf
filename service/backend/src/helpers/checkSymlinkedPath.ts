@@ -10,7 +10,6 @@ export async function symlinkPathResolvesTo(
 ): Promise<boolean> {
   let rpath = resolve(path);
   if (seenPaths.has(rpath)) {
-    console.log("seen", rpath, seenPaths);
     return false;
   }
   seenPaths.add(rpath);
@@ -19,7 +18,6 @@ export async function symlinkPathResolvesTo(
   while (!(await lexists(rpath))) {
     rpath = resolve(rpath, "..");
     if (seenPaths.has(rpath)) {
-      console.log("seen", rpath, seenPaths);
       return false;
     }
     seenPaths.add(rpath);

@@ -19,7 +19,6 @@ checker_forward_port_2 = "4245"
 checker_ip = os.environ['CHECKER_IP']
 
 
-
 def handle_RequestError(err, msg):
     if any(isinstance(err, T) for T in [ConnectTimeout, NetworkError, PoolTimeout]):
         raise OfflineException(msg + ": " + str(err) + " " + type(err).__name__ + " the service is offline")

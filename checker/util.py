@@ -97,7 +97,7 @@ async def create_project(client: AsyncClient, logger: LoggerAdapter, project_nam
         project_name = secrets.token_hex(8)
     
     try:
-        response = await client.post("/api/project/create", data={"name": project_name}, follow_redirects=True)
+        response = await client.post("/api/project/create", data={"name": project_name}, follow_redirects=True, timeout=10)
     except Exception as e:
         handle_RequestError(e, "request error while creating project")
 

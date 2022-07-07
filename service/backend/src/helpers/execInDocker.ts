@@ -5,13 +5,12 @@ import { createReadStream, createWriteStream, promises as fs } from "fs";
 import { resolve } from "path";
 import { tmpdir } from "os";
 
-async function removeContainer(container: Container) {
-  try {
-    await container.kill();
-  } catch (e) {}
-  try {
-    await container.delete({ force: true });
-  } catch {}
+function removeContainer(container: Container) {
+  setTimeout(async ()=>{
+    try {
+      await container.delete({ force: true });
+    } catch {}
+  }, 500);
 }
 
 function timeout<T>(time: number, prom: Promise<T>): Promise<T | string> {
@@ -63,7 +62,7 @@ export async function execInDocker(
   }
 
   // create the container
-  const container = await docker.container.create({
+  const containerProm = docker.container.create({ // we do not need to await this yet, as we need to prepare a tar too
     Image: image,
     WorkingDir: workingDir,
     Cmd: command,
@@ -88,34 +87,37 @@ export async function execInDocker(
   // timeout if taring takes to long
   if ((await timeout(timeoutVal, tarProm)) === "timeout") {
     try {
-      await fs.rm(tarPath);
+      fs.rm(tarPath); // no need to wait for this to complete
     } catch {}
+    removeContainer(await containerProm);
     throw new TimeoutError("creating tar timed out");
   }
+
+  const container = await containerProm;
 
   // put files into container
   await container.fs.put(createReadStream(tarPath), { path: "/" });
   // remove the tar
   try {
-    await fs.rm(tarPath);
+    fs.rm(tarPath); // no need to wait for this to complete
   } catch {}
 
   // start the container and read the logs
   await container.start();
-  const stream: any = await container.logs({
-    follow: true,
-    stdout: true,
-    stderr: true,
-  });
+  //const stream: any = await container.logs({
+  //  follow: true,
+  //  stdout: true,
+  //  stderr: true,
+  //});
 
   let output = "";
-  stream.on("data", (d: Buffer) => {
-    output += trimmedBufferToString(d);
-  });
+  //stream.on("data", (d: Buffer) => {
+  //  output += trimmedBufferToString(d);
+  //});
 
   // wait for container to finish or timeout
   if ((await timeout(timeoutVal * 1.5, container.wait())) === "timeout") {
-    await removeContainer(container);
+    removeContainer(container); // no need to wait for this to complete
     console.error(output);
     throw new TimeoutError("Container took to long.");
   }
@@ -126,20 +128,13 @@ export async function execInDocker(
       const stream = (await container.fs.get({ path: resultPath })) as any;
       const output = createWriteStream(exportPath);
 
-      if (
-        (await timeout(
-          timeoutVal,
-          new Promise((resolve) => {
-            output.on("finish", resolve);
-            stream.pipe(output);
-          })
-        )) === "timeout"
-      ) {
-        await removeContainer(container);
-        throw new TimeoutError("Reading output file timed out");
-      }
+      await new Promise((resolve) => {
+        output.on("finish", resolve);
+        stream.pipe(output);
+      });
+      
     } catch {
-      await removeContainer(container);
+      removeContainer(container);
       throw new DockerExecError("Could not read resultPath", output);
     }
   } else {
@@ -151,24 +146,17 @@ export async function execInDocker(
         cwd: exportPath,
       });
 
-      if (
-        (await timeout(
-          timeoutVal,
-          new Promise((resolve) => {
-            output.on("finish", resolve);
-            stream.pipe(output);
-          })
-        )) === "timeout"
-      ) {
-        await removeContainer(container);
-        throw new TimeoutError("Reading output file timed out");
-      }
+      await new Promise((resolve) => {
+        output.on("finish", resolve);
+        stream.pipe(output);
+      });
+
     } catch {
-      await removeContainer(container);
+      removeContainer(container); // no need to wait for this to complete
       throw new DockerExecError("Could not read resultPath", output);
     }
   }
 
-  await removeContainer(container);
+  removeContainer(container); // no need to wait for this to complete
   return;
 }

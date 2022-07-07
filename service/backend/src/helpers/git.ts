@@ -43,6 +43,9 @@ export async function gitSetupProject(
   remotePath: string,
   gitUrl: string
 ) {
+  // configure 'remote' git
+  const remoteProm = runGitCommandInContainer(remotePath, ["git", "init", "--bare"]);
+
   // copy default document over
   await fs.writeFile(
     resolve(localPath, "main.tex"),
@@ -56,11 +59,10 @@ export async function gitSetupProject(
   \\end{document}`
   );
 
-  // configure 'remote' git
-  await runGitCommandInContainer(remotePath, ["git", "init", "--bare"]);
+  await remoteProm;
 
   // configure 'local' git
-  await runGitCommandInContainer(localPath, [
+  await runGitCommandInContainer(localPath, [ // we do not need to wait for this, the user can still use the project, only main.tex might be replaced for a short while
     "sh",
     "-c",
     `

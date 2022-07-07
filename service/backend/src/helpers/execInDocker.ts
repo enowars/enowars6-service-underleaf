@@ -6,7 +6,7 @@ import { resolve } from "path";
 import { tmpdir } from "os";
 
 function removeContainer(container: Container) {
-  setTimeout(async ()=>{
+  setTimeout(async () => {
     try {
       await container.delete({ force: true });
     } catch {}
@@ -62,7 +62,8 @@ export async function execInDocker(
   }
 
   // create the container
-  const containerProm = docker.container.create({ // we do not need to await this yet, as we need to prepare a tar too
+  const containerProm = docker.container.create({
+    // we do not need to await this yet, as we need to prepare a tar too
     Image: image,
     WorkingDir: workingDir,
     Cmd: command,
@@ -132,7 +133,6 @@ export async function execInDocker(
         output.on("finish", resolve);
         stream.pipe(output);
       });
-      
     } catch {
       removeContainer(container);
       throw new DockerExecError("Could not read resultPath", output);
@@ -150,7 +150,6 @@ export async function execInDocker(
         output.on("finish", resolve);
         stream.pipe(output);
       });
-
     } catch {
       removeContainer(container); // no need to wait for this to complete
       throw new DockerExecError("Could not read resultPath", output);

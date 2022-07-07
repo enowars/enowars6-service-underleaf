@@ -121,6 +121,8 @@ export async function gitPush(path: string) {
 
 export async function gitPull(path: string) {
   return await asyncExec(
-    `cd ${escapeString(path)}; git fetch origin && git reset --hard origin/master`
+    `cd ${escapeString(
+      path
+    )}; git fetch origin && git reset --hard origin/master`
   );
 }

@@ -22,7 +22,7 @@ userSchema.pre("remove", async function () {
   }
 });
 
-userSchema.index({username: 1}, {unique: true});
+userSchema.index({ username: 1 }, { unique: true });
 
 const User = mongoose.model("User", userSchema);
 

@@ -62,10 +62,10 @@ export async function gitSetupProject(
   // configure 'remote' git
   const remoteProm = gitInitBare(remotePath);
 
-  const proms = [] as Array<Promise<void>>;
+  
   // copy default document over
-  proms.push(
-    fs.writeFile(
+ 
+  const writeProm = fs.writeFile(
       resolve(localPath, "main.tex"),
       `\\documentclass[12pt]{minimal}
   \\usepackage[utf8]{inputenc}
@@ -75,17 +75,17 @@ export async function gitSetupProject(
       \\LaTeX{} is \\textit{sus}!
     \\end{center}
   \\end{document}`
-    )
-  );
+    );
+  
 
   // configure 'local' git
   await gitInit(localPath);
-  proms.push(gitConfigName(localPath));
-  proms.push(gitConfigEmail(localPath));
-  proms.push(gitAddRemote(localPath, gitUrl));
+  // the following commands need to be run sequentaly, or they may fail.
+  await gitConfigName(localPath);
+  await gitConfigEmail(localPath);
+  await gitAddRemote(localPath, gitUrl);
 
-  await Promise.all(proms);
-
+  await writeProm;
   await gitCommit(localPath, "Initial commit");
 
   await remoteProm;

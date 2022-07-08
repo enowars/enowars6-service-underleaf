@@ -6,6 +6,8 @@ from typing import Optional, Tuple
 from logging import LoggerAdapter
 import hashlib
 
+import aiofiles
+
 from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTaskMessage, HavocCheckerTaskMessage, ExploitCheckerTaskMessage, PutnoiseCheckerTaskMessage, GetnoiseCheckerTaskMessage, ChainDB, MumbleException, FlagSearcher
 from enochecker3.utils import assert_equals
 from util import *
@@ -32,10 +34,12 @@ async def putflag_zero(task: PutflagCheckerTaskMessage, client: AsyncClient, db:
 
     check_file_path_is_not_mal(f"{path}/main.tex")
     open(f"{path}/main.tex", "w").write(flag_text)
-    os_succ(os.system(f"ln -s main.tex {path}/main.tex.bak"))
+    
+    await os_succ(asyncio.create_subprocess_shell(f"ln -s main.tex {path}/main.tex.bak"), logger)
+
     await git_config_commit_and_push(path, username, "Minor changes to the layout.", logger)
 
-    await cleanup_clone(path)
+    await cleanup_clone(path, logger)
 
     await pull(client, id, logger)
 
@@ -62,13 +66,13 @@ async def getflag_zero(task: GetflagCheckerTaskMessage, client: AsyncClient, db:
     pdf_bytes = await download_pdf(client, id, logger)
     
     file = f"/tmp/{id}.pdf"
-    with open(file, "wb") as f:
-        f.write(pdf_bytes)
+    async with aiofiles.open(file, "wb") as f:
+        await f.write(pdf_bytes)
 
-    os_succ(os.system(f"pdftotext {file} {file}.txt"))
+    await os_succ(asyncio.create_subprocess_shell(f"pdftotext {file} {file}.txt"), logger)
     
-    with open(f"{file}.txt", "r") as f:
-        output = f.read()
+    async with aiofiles.open(f"{file}.txt", "r") as f:
+        output = await f.read()
 
     os.remove(f"{file}.txt")
     os.remove(file)
@@ -96,14 +100,14 @@ async def exploit_read_symlink(task: ExploitCheckerTaskMessage, client: AsyncCli
 
     # add a symlink
     target = f"/app/data/projects/{f_id[0:2]}/{f_id}/main.tex"
-    os_succ(os.system(f"mkdir -p {target}/.. {dev_null}"))
-    os_succ(os.system(f"touch {target} {dev_null}"))
-    os_succ(os.system(f"ln -s {target} /tmp/{id}/link"))
-    os_succ(os.system(f"rm -rf {target} {dev_null}"))
+    await os_succ(asyncio.create_subprocess_shell(f"mkdir -p {target}/.. {dev_null}"), logger)
+    await os_succ(asyncio.create_subprocess_shell(f"touch {target} {dev_null}"), logger)
+    await os_succ(asyncio.create_subprocess_shell(f"ln -s {target} /tmp/{id}/link"), logger)
+    await os_succ(asyncio.create_subprocess_shell(f"rm -rf {target} {dev_null}"), logger)
 
     await git_config_commit_and_push(path, username, "Exploit!", logger)
 
-    await cleanup_clone(path)
+    await cleanup_clone(path, logger)
 
     # let the server pull the changes
     await pull(client, id, logger)
@@ -148,11 +152,11 @@ async def exploit_git_clone_from_container(task: ExploitCheckerTaskMessage, clie
     assert_equals(os.path.exists(
         f"/tmp/{f_id}/main.tex"), True, "file not downloaded")
 
-    with open(f"/tmp/{f_id}/main.tex", "r") as f:
-        output = f.read()
+    async with aiofiles.open(f"/tmp/{f_id}/main.tex", "r") as f:
+        output = await f.read()
         
 
-    os_succ(os.system(f"rm -rf /tmp/{f_id}"))
+    await os_succ(asyncio.create_subprocess_shell(f"rm -rf /tmp/{f_id}"), logger)
 
     if flag := searcher.search_flag(output):
         return flag
@@ -213,10 +217,10 @@ async def exploit_connect_to_mongodb(task: ExploitCheckerTaskMessage, client: As
     if not os.path.exists("/tmp/dump.json"):
         raise MumbleException("Dump file not found")
 
-    with open("/tmp/dump.json", "r") as f:
-        output = f.read()
+    async with aiofiles.open("/tmp/dump.json", "r") as f:
+        output = await f.read()
 
-    os_succ(os.system("rm -rf /tmp/dump.json"))
+    await os_succ(asyncio.create_subprocess_shell("rm -rf /tmp/dump.json"), logger)
 
     if flag := searcher.search_flag(output):
         return flag
@@ -255,10 +259,13 @@ async def getnoise_file_content(task: GetnoiseCheckerTaskMessage, client: AsyncC
     assert_equals(os.path.exists(
         f"{path}/main.tex"), True, "file not created")
 
-    if (os.system(f"git -C {path} log | grep {noise}")) != 0:
+    proc = await asyncio.create_subprocess_shell(f"git -C {path} log | grep {noise}")
+    await proc.wait()
+
+    if proc.returncode != 0:
         raise MumbleException("noise not found")
 
-    await cleanup_clone(path)
+    await cleanup_clone(path, logger)
     
     logger.info("getnoise_file_content: success")
 

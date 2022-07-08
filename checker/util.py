@@ -1,8 +1,7 @@
 import secrets
-import json
 from json import JSONDecodeError
 import os
-from typing import Optional, Tuple
+from typing import Tuple
 from logging import LoggerAdapter
 import hashlib
 
@@ -11,6 +10,8 @@ from enochecker3.utils import assert_equals, assert_in
 from httpx import AsyncClient, Response, RequestError
 
 from httpx import ConnectTimeout, NetworkError, PoolTimeout
+
+import asyncio
 
 service_port = 4242
 
@@ -26,8 +27,12 @@ def handle_RequestError(err, msg):
     raise MumbleException(msg + ": " + str(err) + " " + type(err).__name__)
 
 
-def os_succ(code):
-    if code != 0:
+async def os_succ(corut, logger: LoggerAdapter) -> None:
+    proc = await corut
+
+    out, err = await proc.communicate()
+    if proc.returncode != 0:
+        logger.error("Os command failed with stdout: " + out.decode("utf-8") + "and stderr: " + err.decode("utf-8"))
         raise Exception("Internal error os command failed")
 
 def check_file_path_is_not_mal(path):
@@ -228,7 +233,10 @@ async def clone_project(username: str, password: str, id: str, address: str, log
     # clone the repo onto the checker
     git_url = f"http://{username}:{password}@{address}:{service_port}/git/{id}"
 
-    if os.system(f"git -C /tmp/ clone {git_url} {dev_null}") != 0:
+    proc = await asyncio.create_subprocess_shell(f"git -C /tmp/ clone {git_url} {dev_null}")
+    await proc.wait()
+
+    if proc.returncode != 0:
         raise MumbleException("git clone failed")
 
     # check, that the file is present
@@ -238,22 +246,24 @@ async def clone_project(username: str, password: str, id: str, address: str, log
     return f"/tmp/{id}"
 
 
-async def cleanup_clone(path: str):
-    os_succ(os.system(f"rm -rf {path} {dev_null}"))
+async def cleanup_clone(path: str, logger):
+    await os_succ(asyncio.create_subprocess_shell(f"rm -rf {path} {dev_null}"), logger)
 
 
 async def git_config_commit_and_push(path: str, username: str, message: str, logger: LoggerAdapter) -> None:
     # commit it
-    os_succ(os.system(
-        f"git -C {path} config user.email \"{username}@example.com\" {dev_null}"))
-    os_succ(
-        os.system(f"git -C {path} config user.name \"{username}\" {dev_null}"))
+    await os_succ(asyncio.create_subprocess_shell(
+        f"git -C {path} config user.email \"{username}@example.com\" {dev_null}"), logger)
+    await os_succ(
+        asyncio.create_subprocess_shell(f"git -C {path} config user.name \"{username}\" {dev_null}"), logger)
 
-    os_succ(os.system(f"git -C {path} add . {dev_null}"))
-    os_succ(os.system(f"git -C {path} commit -m '{message}' {dev_null}"))
+    await os_succ(asyncio.create_subprocess_shell(f"git -C {path} add . {dev_null}"), logger)
+    await os_succ(asyncio.create_subprocess_shell(f"git -C {path} commit -m '{message}' {dev_null}"), logger)
 
     # push it onto the server
-    if os.system(f"git -C {path} push {dev_null}") != 0:
+    proc = await asyncio.create_subprocess_shell(f"git -C {path} push {dev_null}")
+    await proc.wait()
+    if proc.returncode != 0:
         raise MumbleException("git push failed")
 
     logger.info(f"pushed project {path} with message {message} as {username}")

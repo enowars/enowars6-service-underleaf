@@ -105,21 +105,20 @@ export async function execInDocker(
 
   // start the container and read the logs
   await container.start();
-  //const stream: any = await container.logs({
-  //  follow: true,
-  //  stdout: true,
-  //  stderr: true,
-  //});
+  const stream: any = await container.logs({
+    follow: true,
+    stdout: true,
+    stderr: true,
+  });
 
   let output = "";
-  //stream.on("data", (d: Buffer) => {
-  //  output += trimmedBufferToString(d);
-  //});
+  stream.on("data", (d: Buffer) => {
+    output += trimmedBufferToString(d);
+  });
 
   // wait for container to finish or timeout
   if ((await timeout(timeoutVal * 1.5, container.wait())) === "timeout") {
     removeContainer(container); // no need to wait for this to complete
-    console.error(output);
     throw new TimeoutError("Container took to long.");
   }
 

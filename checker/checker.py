@@ -1,19 +1,15 @@
-from calendar import c
-import secrets
+import asyncio
 import json
 import os
-from typing import Optional, Tuple
+import secrets
+import subprocess
 from logging import LoggerAdapter
-import hashlib
 
 import aiofiles
-
-from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTaskMessage, HavocCheckerTaskMessage, ExploitCheckerTaskMessage, PutnoiseCheckerTaskMessage, GetnoiseCheckerTaskMessage, ChainDB, MumbleException, FlagSearcher
+from enochecker3 import ChainDB, Enochecker, ExploitCheckerTaskMessage, FlagSearcher, GetflagCheckerTaskMessage, GetnoiseCheckerTaskMessage, MumbleException, PutflagCheckerTaskMessage, PutnoiseCheckerTaskMessage
 from enochecker3.utils import assert_equals
-from util import *
 
-import subprocess
-import asyncio
+from util import *
 
 checker = Enochecker("underleaf", service_port)
 def app(): return checker.app

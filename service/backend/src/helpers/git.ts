@@ -62,12 +62,11 @@ export async function gitSetupProject(
   // configure 'remote' git
   const remoteProm = gitInitBare(remotePath);
 
-  
   // copy default document over
- 
+
   const writeProm = fs.writeFile(
-      resolve(localPath, "main.tex"),
-      `\\documentclass[12pt]{minimal}
+    resolve(localPath, "main.tex"),
+    `\\documentclass[12pt]{minimal}
   \\usepackage[utf8]{inputenc}
       
   \\begin{document}
@@ -75,8 +74,7 @@ export async function gitSetupProject(
       \\LaTeX{} is \\textit{sus}!
     \\end{center}
   \\end{document}`
-    );
-  
+  );
 
   // configure 'local' git
   await gitInit(localPath);

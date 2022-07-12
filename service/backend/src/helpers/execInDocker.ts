@@ -68,7 +68,6 @@ export async function execInDocker(
     WorkingDir: workingDir,
     Cmd: command,
     User: "1000:1000",
-    CpuPercent: 50,
     NetworkMode: "host",
   });
 

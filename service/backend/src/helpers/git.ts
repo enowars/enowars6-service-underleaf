@@ -58,32 +58,40 @@ function gitInitBare(path: string) {
   return asyncExec(`git init --bare ${escapeString(path)}`);
 }
 
+let templatesKnownToBeCreated = false;
 const createTemplateMutex = new Mutex();
 export async function gitSetupProject(
   localPath: string,
   remotePath: string,
   gitUrl: string
 ) {
-  if ((!await exists(localTemplate)) || (!await exists(remoteTemplate))) {
+  if (!templatesKnownToBeCreated) {
     await createTemplateMutex.runExclusive(async () => {
-      if (! await exists(localTemplate)) {
-        console.log("[+] creating project templates")
+      if (!templatesKnownToBeCreated && !(await exists(localTemplate))) {
+        console.log("[+] creating project templates");
         await gitSetupTemplates();
       }
+
+      templatesKnownToBeCreated = true;
     });
   }
 
   // copy over the templates
-  await Promise.all([copy(localTemplate, localPath), copy(remoteTemplate, remotePath)]);
+  await Promise.all([
+    copy(localTemplate, localPath),
+    copy(remoteTemplate, remotePath),
+  ]);
   // update the git url
-  await fs.appendFile(localPath + "/.git/config", `[remote "origin"]\n\turl = ${gitUrl}\n\tfetch = +refs/heads/*:refs/remotes/origin/*\n`);
+  await fs.appendFile(
+    localPath + "/.git/config",
+    `[remote "origin"]\n\turl = ${gitUrl}\n\tfetch = +refs/heads/*:refs/remotes/origin/*\n`
+  );
 }
 
 const localTemplate = "/app/data/templates/local";
 const remoteTemplate = "/app/data/templates/remote";
 
 export async function gitSetupTemplates() {
-
   await Promise.all([fs.mkdir(localTemplate), fs.mkdir(remoteTemplate)]);
 
   // configure 'remote' git
@@ -130,9 +138,7 @@ export async function gitAddRemote(path: string, url: string) {
 
 export async function gitRemoveRemote(path: string) {
   const rpath = resolve(path);
-  return asyncExec(
-    `git -C ${escapeString(rpath)} remote remove origin`
-  );
+  return asyncExec(`git -C ${escapeString(rpath)} remote remove origin`);
 }
 
 export async function gitCommit(path: string, message: string) {

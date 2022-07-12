@@ -80,7 +80,7 @@ services:
       [
         "/bin/sh",
         "-c",
-        "mkdir -p /data/git/; mkdir -p /data/projects/; chown -R 1000:1000 /data /cert",
+        "mkdir -p /data/git/; mkdir -p /data/projects/; mkdir -p /data/templates; chown -R 1000:1000 /data /cert",
       ]
     volumes:
       - ./data/:/data

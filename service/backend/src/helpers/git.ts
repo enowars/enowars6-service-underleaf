@@ -1,7 +1,11 @@
 import shellescape from "shell-escape";
 import { exec } from "child_process";
 import { promises as fs } from "fs";
+import { copy } from "fs-extra";
 import { resolve } from "path";
+
+import { Mutex } from "async-mutex";
+import { exists } from "./existsAsync";
 
 export const gitImage = "hllm/git";
 
@@ -54,18 +58,41 @@ function gitInitBare(path: string) {
   return asyncExec(`git init --bare ${escapeString(path)}`);
 }
 
+const createTemplateMutex = new Mutex();
 export async function gitSetupProject(
   localPath: string,
   remotePath: string,
   gitUrl: string
 ) {
+  if ((!await exists(localTemplate)) || (!await exists(remoteTemplate))) {
+    await createTemplateMutex.runExclusive(async () => {
+      if (! await exists(localTemplate)) {
+        console.log("[+] creating project templates")
+        await gitSetupTemplates();
+      }
+    });
+  }
+
+  // copy over the templates
+  await Promise.all([copy(localTemplate, localPath), copy(remoteTemplate, remotePath)]);
+  // update the git url
+  await fs.appendFile(localPath + "/.git/config", `[remote "origin"]\n\turl = ${gitUrl}\n\tfetch = +refs/heads/*:refs/remotes/origin/*\n`);
+}
+
+const localTemplate = "/app/data/templates/local";
+const remoteTemplate = "/app/data/templates/remote";
+
+export async function gitSetupTemplates() {
+
+  await Promise.all([fs.mkdir(localTemplate), fs.mkdir(remoteTemplate)]);
+
   // configure 'remote' git
-  const remoteProm = gitInitBare(remotePath);
+  const remoteProm = gitInitBare(remoteTemplate);
 
   // copy default document over
 
   const writeProm = fs.writeFile(
-    resolve(localPath, "main.tex"),
+    resolve(localTemplate, "main.tex"),
     `\\documentclass[12pt]{minimal}
   \\usepackage[utf8]{inputenc}
       
@@ -77,24 +104,34 @@ export async function gitSetupProject(
   );
 
   // configure 'local' git
-  await gitInit(localPath);
+  await gitInit(localTemplate);
   // the following commands need to be run sequentaly, or they may fail.
-  await gitConfigName(localPath);
-  await gitConfigEmail(localPath);
-  await gitAddRemote(localPath, gitUrl);
+  await gitConfigName(localTemplate);
+  await gitConfigEmail(localTemplate);
 
   await writeProm;
-  await gitCommit(localPath, "Initial commit");
+  await gitCommit(localTemplate, "Initial commit");
 
   await remoteProm;
 
-  await gitPush(localPath);
+  await gitAddRemote(localTemplate, remoteTemplate);
+
+  await gitPush(localTemplate);
+
+  await gitRemoveRemote(localTemplate);
 }
 
 export async function gitAddRemote(path: string, url: string) {
   const rpath = resolve(path);
   return asyncExec(
     `git -C ${escapeString(rpath)} remote add origin ${escapeString(url)}`
+  );
+}
+
+export async function gitRemoveRemote(path: string) {
+  const rpath = resolve(path);
+  return asyncExec(
+    `git -C ${escapeString(rpath)} remote remove origin`
   );
 }
 

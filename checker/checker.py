@@ -45,7 +45,7 @@ async def putflag_zero(task: PutflagCheckerTaskMessage, client: AsyncClient, db:
 
 
 @checker.getflag(0)
-async def getflag_zero(task: GetflagCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> str:
+async def getflag_zero(task: GetflagCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> None:
     try:
         (username, password) = await db.get("credentials")
     except KeyError:
@@ -163,7 +163,7 @@ async def putflag_one(task: PutflagCheckerTaskMessage, client: AsyncClient, db: 
     return json.dumps({'username': username})
 
 @checker.getflag(1)
-async def getflag_one(task: GetflagCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> str:
+async def getflag_one(task: GetflagCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> None:
     try:
         (username, password) = await db.get("credentials")
         (_, id) = await db.get('project')
@@ -175,7 +175,7 @@ async def getflag_one(task: GetflagCheckerTaskMessage, client: AsyncClient, db: 
     projects = await list_projects(client, logger)
     for project in projects:
         if project["name"] == task.flag and project["id"] == id:
-            return project["name"]
+            return
     
     raise MumbleException("Flag not found.")
 

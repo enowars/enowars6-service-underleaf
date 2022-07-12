@@ -44,7 +44,7 @@ def response_ok(response: Response, message: str, logger: LoggerAdapter) -> dict
     except JSONDecodeError:
         raise MumbleException(message)
 
-    assert_in("status", json, message + " status not found")
+    assert_in("status", json, message + "response json contained no status code")
     
     if "output" in json:
         logger.info("Request returned output: " + json["output"])

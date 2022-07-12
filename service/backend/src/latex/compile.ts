@@ -66,7 +66,7 @@ export const compileProject: RequestHandler = async (req, res, next) => {
     } catch (e) {
       // Bubble errors
       if (e instanceof TimeoutError) {
-        res.status(400).json(e.message);
+        res.status(400).json({ status: e.message });
         return;
       } else if (e instanceof DockerExecError) {
         res.status(400).json({ status: "Compile failed", output: e.output });

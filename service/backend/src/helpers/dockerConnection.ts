@@ -12,11 +12,12 @@ if (typeof process.env.DOCKER_CERT_PATH === "undefined") {
 const certPath = process.env.DOCKER_CERT_PATH;
 export let docker: Modem = undefined as any;
 
-export async function initDocker(){
+export async function initDocker() {
   const host = (await dns.lookup("dind")).address;
   const url = `https://${host}:2376`;
 
-  docker = new Modem(url,
+  docker = new Modem(
+    url,
     await fs.readFile(join(certPath, "ca.pem")),
     await fs.readFile(join(certPath, "cert.pem")),
     await fs.readFile(join(certPath, "key.pem"))
@@ -29,6 +30,8 @@ export async function initDocker(){
   ];
 
   for (const image of requiredImages) {
-    docker.pullImage(image.name, image.tag).then(()=>{console.log("[DOCKER]", `pulled ${image.name}:${image.tag}`)});
+    docker.pullImage(image.name, image.tag).then(() => {
+      console.log("[DOCKER]", `pulled ${image.name}:${image.tag}`);
+    });
   }
 }

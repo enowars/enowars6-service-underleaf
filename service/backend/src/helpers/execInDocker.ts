@@ -4,7 +4,6 @@ import { createReadStream, createWriteStream, promises as fs } from "fs";
 import { resolve } from "path";
 import { tmpdir } from "os";
 
-
 function timeout<T>(time: number, prom: Promise<T>): Promise<T | string> {
   return new Promise((resolve, reject) => {
     const timeoutId = setTimeout(() => {

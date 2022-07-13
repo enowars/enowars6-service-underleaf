@@ -1,6 +1,9 @@
 import app from "./index/express";
 import { connection } from "./index/mongoose";
 import mongoose from "mongoose";
+import { initDocker } from "./helpers/dockerConnection";
+
+initDocker();
 
 connection.then(async () => {
   console.log("[INFO] connected to mongodb");

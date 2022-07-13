@@ -1,49 +1,34 @@
-import { Docker } from "node-docker-api";
 import { latexDockerImage } from "../latex/constats";
 import { promises as fs } from "fs";
 import { join } from "path";
 import { promises as dns } from "dns";
 import { gitImage } from "./git";
+import { Modem } from "./docker";
 
 if (typeof process.env.DOCKER_CERT_PATH === "undefined") {
   throw Error("DOCKER_CERT_PATH is not defined");
 }
 
 const certPath = process.env.DOCKER_CERT_PATH;
+export let docker: Modem = undefined as any;
 
-let _docker: Docker = {} as any;
+export async function initDocker(){
+  const host = (await dns.lookup("dind")).address;
+  const url = `https://${host}:2376`;
 
-const promisifyStream = (stream: any) =>
-  new Promise((resolve, reject) => {
-    stream.on("data", (d: any) => console.log("[DOCKER]", d.toString()));
-    stream.on("end", resolve);
-    stream.on("error", reject);
-  });
+  docker = new Modem(url,
+    await fs.readFile(join(certPath, "ca.pem")),
+    await fs.readFile(join(certPath, "cert.pem")),
+    await fs.readFile(join(certPath, "key.pem"))
+  );
 
-setTimeout(async () => {
-  const __docker = new Docker({
-    protocol: "https",
-    host: (await dns.lookup("dind")).address, // yes this is needed, the ca valid for the host 'dind'
-    port: 2376,
-    ca: await fs.readFile(join(certPath, "ca.pem")),
-    cert: await fs.readFile(join(certPath, "cert.pem")),
-    key: await fs.readFile(join(certPath, "key.pem")),
-  });
-
-  Object.assign(_docker, __docker);
-
-  // dind takes some time to boot up, so we wait a bit
   const requiredImages = [
     // both images Dockerfiles can be found in ../../../dockerimages
     { name: latexDockerImage, tag: "latest" },
     { name: gitImage, tag: "latest" },
   ];
 
-  for (const requiredImage of requiredImages) {
-    _docker.image
-      .create({}, { fromImage: requiredImage.name, tag: requiredImage.tag })
-      .then((stream) => promisifyStream(stream));
+  for (const image of requiredImages) {
+    docker.pullImage(image.name, image.tag).then(()=>{console.log("[DOCKER]", `pulled ${image.name}:${image.tag}`)});
   }
-}, 100);
-
-export const docker = _docker;
+}

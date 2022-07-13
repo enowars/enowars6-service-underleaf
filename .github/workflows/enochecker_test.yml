@@ -32,7 +32,7 @@ jobs:
           docker-compose up -d
 
       - name: Wait for dind
-        run: while true; do test $(docker logs underleaf-backend | grep Digest | wc -l) \> 1 && break; done
+        run: while true; do test $(docker logs underleaf-backend | grep pulled | wc -l) \> 1 && break; done
 
       - name: Run enochecker_Test
         run: enochecker_test

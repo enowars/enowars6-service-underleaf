@@ -16,6 +16,7 @@ services:
       - MONGO_PASSWORD=underleaf_checker_password
       - NOT_ENOCHECKER_TEST=${NOT_ENOCHECKER_TEST}
       - CHECKER_IP=${CHECKER_IP}
+    restart: unless-stopped
 
   underleaf-checker-db:
     image: mongo
@@ -26,6 +27,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: underleaf_checker_password
     logging:
       driver: none
+    restart: unless-stopped
 
 volumes:
   underleaf-checker-db:

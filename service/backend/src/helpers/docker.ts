@@ -71,7 +71,12 @@ export class Modem {
     workingDir: string,
     cmd: Array<string>,
     user: string,
-    networkMode: string
+    networkMode: string,
+    bindMounts: Array<{
+      hostPath: string;
+      containerPath: string;
+      flag: string | undefined;
+    }>
   ) {
     const createUrl = join(this.url, "/v1.41/containers/create?");
     const body = JSON.stringify({
@@ -79,7 +84,15 @@ export class Modem {
       WorkingDir: workingDir,
       Cmd: cmd,
       User: user,
-      NetworkMode: networkMode,
+      HostConfig: {
+        NetworkMode: networkMode,
+        Binds: bindMounts.map((mount) => {
+          return (
+            `${mount.hostPath}:${mount.containerPath}` +
+            (mount.flag ? `:${mount.flag}` : "")
+          );
+        }),
+      },
     });
 
     const response = await fetch(createUrl, {

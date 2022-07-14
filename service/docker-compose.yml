@@ -43,6 +43,7 @@ services:
     volumes:
       - docker-cert:/certs
       - ./data/docker:/var/lib/docker
+      - ./data/:/app/data/
 
   nginx-git:
     image: catks/gitserver-http@sha256:5008e89559513aa77477c6a7c25b66818ea8396a3cb3c4503b63e3ac721e1d7f

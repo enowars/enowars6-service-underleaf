@@ -22,7 +22,7 @@ export function getProjectPath(id: string): string {
 
 export function getProjectRemoteGitPath(id: string): string {
   throwIfProjectIdIsNotSafe(id);
-  return "./data/git/" + id; //idToSegmentedPath(id);
+  return "/app/data/git/" + id; //idToSegmentedPath(id);
 }
 
 export function getRemoteGitUrl(id: string): string {
@@ -44,7 +44,12 @@ export const reqProjectIdIsSafe: RequestHandler = async (req, res, next) => {
   res.status(400).json({ status: "Project id is invalid" });
 };
 
+export function getProjectCompileFolder(id: string): string {
+  throwIfProjectIdIsNotSafe(id);
+  return "/app/data/compile/" + id.substring(0, 2);
+}
+
 export function getProjectCompilePath(id: string): string {
   throwIfProjectIdIsNotSafe(id);
-  return "./data/compile/" + idToSegmentedPath(id);
+  return "/app/data/compile/" + idToSegmentedPath(id);
 }

@@ -17,7 +17,7 @@ services:
       - docker-cert:/cert
     environment:
       - DOCKER_CERT_PATH=/cert/client
-      - DEBUG=yes
+      #- DEBUG=yes # enable to use static jwt secret
     restart: "unless-stopped"
 
   db:

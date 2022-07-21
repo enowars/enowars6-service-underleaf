@@ -54,7 +54,7 @@ export async function execInDocker(
     workingDir,
     command,
     "1000:1000",
-    "host",
+    "none",
     [
       {
         hostPath: hostOutputPath,

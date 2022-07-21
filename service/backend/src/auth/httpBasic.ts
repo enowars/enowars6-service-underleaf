@@ -13,7 +13,8 @@ export const httpBasic: RequestHandler = async (req, res, next) => {
 
     if (
       originalUrl.pathname.startsWith("/git/") &&
-      typeof originalUrl.pathname.split("/")[2] === "string"
+      typeof originalUrl.pathname.split("/")[2] === "string" &&
+      !url.includes("..")
     ) {
       const header = req.headers["authorization"];
       if (header && header.startsWith("Basic ")) {

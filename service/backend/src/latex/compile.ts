@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { status_ok } from "../helpers/status";
 
-import { getProjectCompileFolder, getProjectPath } from "../helpers/project";
+import { getProjectCompilePath, getProjectPath } from "../helpers/project";
 import { latexDockerImage } from "./constats";
 
 import Nonce from "./nonceSchema";
@@ -13,6 +13,7 @@ import {
 } from "../helpers/execInDocker";
 
 import { promises as fs } from "fs";
+import { resolve } from 'path';
 
 export const compileProject: RequestHandler = async (req, res, next) => {
   try {
@@ -48,15 +49,16 @@ export const compileProject: RequestHandler = async (req, res, next) => {
 
     // compile the project
     try {
-      const outputDir = getProjectCompileFolder(req.params.id);
-      await fs.mkdir(outputDir, { recursive: true });
+      const outputPath = getProjectCompilePath(req.params.id) + ".pdf";
+      await fs.mkdir(resolve(outputPath, ".."), { recursive: true });
+      await fs.writeFile(outputPath, "");
 
       await execInDocker(
         latexDockerImage,
         [
           "pdflatex",
           "-shell-escape",
-          "--output-directory=/output/",
+          "--output-directory=/output",
           "--jobname=" + req.params.id,
           "/data/" + req.body.file,
         ],
@@ -64,7 +66,7 @@ export const compileProject: RequestHandler = async (req, res, next) => {
         getProjectPath(req.params.id),
         "/data/",
         "/output/",
-        outputDir,
+        resolve(outputPath, ".."),
         1500
       );
     } catch (e) {
